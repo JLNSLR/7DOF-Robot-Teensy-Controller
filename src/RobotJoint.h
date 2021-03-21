@@ -6,6 +6,7 @@
 #include <PIDController.h>
 #include <IIRFilter.h>
 #include <RobotBuffers.h>
+#include <differentiator.h>
 #include <Arduino.h>
 
 #define CURRENT_FILTER_ORDER 4
@@ -56,7 +57,7 @@ public:
     static float b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1];
 
     IIRFilter<CURRENT_FILTER_ORDER> currentFilter;
-    IIRFilter<POSITION_FILTER_ORDER> positonFilter;
+    IIRFilter<POSITION_FILTER_ORDER> positionFilter;
 
     void drive(int16_t motorCommand);
 
@@ -82,9 +83,9 @@ private:
     int lastTimeTorqueInput = 0;
     int lastTimeCurrentInput = 0;
 
-    static int positionInputPeriod = 3333;
-    static int currentInputPeriod = 400;
-    static int torqueInputPeruid = 3333;
+    const static int positionInputPeriod = 3333;
+    const static int currentInputPeriod = 400;
+    const static int torqueInputPeruid = 3333;
 
     int32_t angle_offset = 0;
     int32_t torque_offset = 0;
@@ -94,6 +95,10 @@ private:
 
     int32_t convertPositionInput(int16_t rawPosition);
     int32_t convertTorqueInput(int32_t rawTorque);
+
+    Differentiator firstDerivative;
+    Differentiator secondDerivative;
+
 };
 
 #endif //ROBOTJOINT_H
