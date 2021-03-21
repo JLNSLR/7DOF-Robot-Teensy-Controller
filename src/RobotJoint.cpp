@@ -1,4 +1,5 @@
 #include <RobotJoint.h>
+#include <FixPointMath.h>
 
 // --- Filter Coefficients --- //
 float RobotJoint::a_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1] = {1, 2.369513007182038, 2.313988414415880, 1.054665405878567, 0.187379492368185};
@@ -12,4 +13,74 @@ RobotJoint::RobotJoint()
 {
     currentFilter.setCoefficients(a_coefficients_currentFilter, b_coefficients_currentFilter);
     positonFilter.setCoefficients(a_coefficients_positionFilter, b_coefficients_positionFilter);
+}
+
+void RobotJoint::calcSpeed()
+{
+}
+
+void RobotJoint::processPositionInput()
+{
+    if (micros() - lastTimePositionInput > positionInputPeriod)
+    {
+        lastTimePositionInput = micros();
+        positionFilter.input = convertPositionInput(jointPositionInput[joint_id].pop());
+        positionFilter.compute();
+        position.unshift(positionFilter.output);
+    }
+}
+
+/* --- Implementation of Utility SensorDataHandling Methods --- */
+
+int32_t RobotJoint::convertPositionInput(int16_t rawPosition)
+{
+    return float2Fix(CONVERSION_FACTOR_13BITPOS_RADIAN) * rawPosition - angle_offset;
+}
+
+void RobotJoint::setAngleOffsetRad(float angle_offset)
+{
+    angle_offset = float2Fix(angle_offset);
+}
+void RobotJoint::setAngleOffsetDeg(float angle_offset)
+{
+    angle_offset = float2Fix(angle_offset * DEG2RAD);
+}
+void RobotJoint::setTorqueOffsetNm(float torqueOffset)
+{
+    torque_offset = float2Fix(torqueOffset);
+}
+
+float RobotJoint::getAngleRad()
+{
+    return fix2Float(position.last());
+}
+float RobotJoint::getVelocityRad()
+{
+    return fix2Float(velocity.last());
+}
+float RobotJoint::getAccelerationRad()
+{
+    return fix2Float(acceleration.last());
+}
+
+float RobotJoint::getAngleDeg()
+{
+    return fix2Float(position.last()) * RAD2DEG;
+}
+float RobotJoint::getVelocityDeg()
+{
+    return fix2Float(velocity.last()) * RAD2DEG;
+}
+float RobotJoint::getAccelerationDeg()
+{
+    return fix2Float(acceleration.last()) * RAD2DEG;
+}
+
+float RobotJoint::getTorque()
+{
+    return fix2Float(torque.last());
+}
+float RobotJoint::getCurrent()
+{
+    return fix2Float(current.last());
 }
