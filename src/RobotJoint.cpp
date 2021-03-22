@@ -12,13 +12,13 @@ float RobotJoint::b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {1,
 RobotJoint::RobotJoint()
 {
     currentFilter.setCoefficients(a_coefficients_currentFilter, b_coefficients_currentFilter);
-    positonFilter.setCoefficients(a_coefficients_positionFilter, b_coefficients_positionFilter);
+    positionFilter.setCoefficients(a_coefficients_positionFilter, b_coefficients_positionFilter);
+
+    firstDerivative.setFrequency(POS_FREQ);
+    secondDerivative.setFrequency(POS_FREQ);
 }
 
-void RobotJoint::calcSpeed()
-{
-}
-
+// --- Methods to process Sensor Inputs --- //
 void RobotJoint::processPositionInput()
 {
     if (micros() - lastTimePositionInput > positionInputPeriod)
@@ -27,6 +27,58 @@ void RobotJoint::processPositionInput()
         positionFilter.input = convertPositionInput(jointPositionInput[joint_id].pop());
         positionFilter.compute();
         position.unshift(positionFilter.output);
+
+        firstDerivative.setInput(positionFilter.output);
+        firstDerivative.differentiate();
+        velocity.unshift(firstDerivative.getOutput());
+        secondDerivative.setInput(firstDerivative.getOutput());
+        secondDerivative.differentiate();
+        acceleration.unshift(secondDerivative.getOutput());
+
+        if (posLimit)
+        {
+            if ((position.first() < limit_left) ^ (position.first() > limit_right))
+            {
+                drive(0);
+            }
+        }
+    }
+}
+
+void RobotJoint::processCurrentInput()
+{
+    if (micros() - lastTimeCurrentInput > currentInputPeriod)
+    {
+        lastTimeCurrentInput = micros();
+        currentFilter.input = jointCurrentInput[joint_id].pop();
+        currentFilter.compute();
+        current.unshift(currentFilter.output);
+    }
+}
+void RobotJoint::processTorqueInput()
+{
+    if (micros() - lastTimeTorqueInput > currentInputPeriod)
+    {
+        lastTimeTorqueInput = micros();
+        torque.unshift(convertTorqueInput(jointTorqueInput[joint_id].pop()));
+    }
+}
+
+/* --- Methods to control the Joint Actuation --- */
+void RobotJoint::drive(int16_t motorCommand)
+{
+    controlMotorDriver(joint_id, motorCommand);
+}
+
+void RobotJoint::setPosLimits(float limit_right, float limit_left)
+{
+    posLimit = true;
+    this->limit_left = float2Fix(limit_left);
+    this->limit_right = float2Fix(limit_right);
+
+    if (limit_right == 0 && limit_left == 0)
+    {
+        posLimit = false;
     }
 }
 
@@ -34,7 +86,12 @@ void RobotJoint::processPositionInput()
 
 int32_t RobotJoint::convertPositionInput(int16_t rawPosition)
 {
-    return float2Fix(CONVERSION_FACTOR_13BITPOS_RADIAN) * rawPosition - angle_offset;
+    return float2Fix(CONVERSION_FACTOR_13BITPOS_RADIAN * rawPosition) - angle_offset;
+}
+
+int32_t RobotJoint::convertTorqueInput(int32_t rawTorque)
+{
+    return rawTorque; //TODO
 }
 
 void RobotJoint::setAngleOffsetRad(float angle_offset)

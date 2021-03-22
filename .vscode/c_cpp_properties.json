@@ -10,6 +10,7 @@
             "includePath": [
                 "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/include",
                 "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/src",
+                "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                 "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/lib/FlexCAN_T4",
                 "C:/Users/Julian Seiler/.platformio/lib/CircularBuffer_ID1796",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/cores/teensy4",
@@ -47,7 +48,6 @@
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/DS1307RTC",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/DmxSimple",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/DogLcd",
-                "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EasyTransfer",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EasyTransferI2C",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/Encoder",
@@ -134,6 +134,7 @@
                 "path": [
                     "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/include",
                     "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/src",
+                    "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                     "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/lib/FlexCAN_T4",
                     "C:/Users/Julian Seiler/.platformio/lib/CircularBuffer_ID1796",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/cores/teensy4",
@@ -171,7 +172,6 @@
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/DS1307RTC",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/DmxSimple",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/DogLcd",
-                    "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EasyTransfer",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EasyTransferI2C",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/Encoder",

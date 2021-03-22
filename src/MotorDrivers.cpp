@@ -196,7 +196,7 @@ int16_t processCurrentSensor(currentSensorSpec spec, uint8_t pin, uint8_t sensor
   {
     current = current * SENSITIVITY_30A;
   }
-  else if (spec == I20)
+  else if (spec == I20A)
   {
     current = current * SENSITIVITY_20A;
   }
