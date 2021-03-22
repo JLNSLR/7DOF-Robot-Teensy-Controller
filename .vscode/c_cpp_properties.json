@@ -10,8 +10,8 @@
             "includePath": [
                 "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/include",
                 "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/src",
-                "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                 "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/lib/FlexCAN_T4",
+                "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                 "C:/Users/Julian Seiler/.platformio/lib/CircularBuffer_ID1796",
                 "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/cores/teensy4",
                 "C:/Users/Julian Seiler/.platformio/lib/Adafruit ADXL343_ID6117",
@@ -134,8 +134,8 @@
                 "path": [
                     "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/include",
                     "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/src",
-                    "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                     "C:/dev/CrudeBot-Project/7DOF-Robot-Teensy-Controller/lib/FlexCAN_T4",
+                    "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                     "C:/Users/Julian Seiler/.platformio/lib/CircularBuffer_ID1796",
                     "C:/Users/Julian Seiler/.platformio/packages/framework-arduinoteensy/cores/teensy4",
                     "C:/Users/Julian Seiler/.platformio/lib/Adafruit ADXL343_ID6117",
