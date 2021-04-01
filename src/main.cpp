@@ -1,7 +1,7 @@
 #include <Arduino.h>
-#include "FixPointMath.h"
-#include "IIRFilter.h"
-#include "FIRFilter.h"
+#include <Math/FixPointMath.h>
+#include "Filters/IIRFilter.h"
+#include "Filters/FIRFilter.h"
 #include "FlexCAN_T4.h"
 #include "RobotDataStructures.h"
 #include <CircularBuffer.h>

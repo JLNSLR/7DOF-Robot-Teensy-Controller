@@ -2,7 +2,7 @@
 #define IIRFILTER_H
 
 #include "CircularBuffer.h"
-#include "FixPointMath.h."
+#include "Math/FixPointMath.h."
 
 //#define IIRDEBUG
 

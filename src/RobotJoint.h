@@ -3,10 +3,10 @@
 
 #include <MotorDrivers.h>
 #include <CircularBuffer.h>
-#include <PIDController.h>
-#include <IIRFilter.h>
+#include <PID/PIDController.h>
+#include <Filters/IIRFilter.h>
 #include <RobotBuffers.h>
-#include <differentiator.h>
+#include <Math/differentiator.h>
 #include <Arduino.h>
 #include <EEPROM.h>
 

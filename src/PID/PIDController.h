@@ -2,7 +2,7 @@
 #define PIDCONTROLLER_H
 
 #include "Arduino.h"
-#include "FixPointMath.h"
+#include "Math/FixPointMath.h"
 
 #define MANUAL 0
 #define AUTOMATIC 1

@@ -9,26 +9,31 @@
 
 #define COMMUNICATION_DEBUG
 
-struct actuationCommand {
+struct actuationCommand
+{
   uint8_t joint_id;
   int16_t motorCommand;
 };
 
-struct positionOffsetCommand {
+struct positionOffsetCommand
+{
   uint8_t joint_id;
   float offset;
 };
-struct torqueOffsetCommand {
+struct torqueOffsetCommand
+{
   uint8_t joint_id;
   float offset;
 };
-struct jointLimitCommand {
+struct jointLimitCommand
+{
   uint8_t joint_id;
   float limit_r;
   float limit_l;
 };
 
-struct jointPIDGainsCommand {
+struct jointPIDGainsCommand
+{
   uint8_t joint_id;
   uint8_t controllerType;
   float Kp;
@@ -36,7 +41,8 @@ struct jointPIDGainsCommand {
   float Kd;
 };
 
-struct robotStateVector {
+struct robotStateVector
+{
   char identifier = 's';
   float joint_angles[7];
   float joint_velocities[7];
@@ -45,7 +51,8 @@ struct robotStateVector {
   float jointCurrents[7];
 };
 
-class RobotComm {
+class RobotComm
+{
 
 public:
   RobotComm();
@@ -55,6 +62,11 @@ public:
 
   int serialOutputPeriod = 3333;
 
+  void activateSerialSensorOutput(int joint_id, bool position, bool velocity,
+                                  bool acceleration, bool torque, bool current);
+  void periodicSerialOutput();
+
+private:
   String *decomposeMsg(String msg);
   void parseStringCommand(String *msg);
 
@@ -68,17 +80,40 @@ public:
 
   void processTargetCommand(String commands[5]);
 
-  void activateSerialSensorOutput(int joint_id, bool position, bool velocity,
-                                  bool acceleration, bool torque, bool current);
-  void periodicSerialOutput();
+  void processActivateOutputCommand(String commands[5]);
 
-private:
+  void printSerialPosition(int joint_id);
+
+  void printSerialTrajectory(int joint_id);
+
+  void printSerialTorque(int joint_id);
+
+  void printSerialCurrent(int joint_id);
+
+  void printSerialJointData(int joint_id);
+
+  void printSerialAllPositionData();
+
+  void printSerialAllTrajectories();
+
+  void printSerialAllData();
+
   int output_joint_id;
-  bool position_output;
-  bool velocity_output;
-  bool acceleration_output;
-  bool torque_output;
-  bool current;
+  enum outputMode
+  {
+    position,
+    traj,
+    torque,
+    curr,
+    joint,
+    allPosition,
+    allTraj,
+    allData
+  };
+
+  outputMode mode;
+
+  int last_output = 0;
 };
 
 #endif // ROBOTCOMM_H

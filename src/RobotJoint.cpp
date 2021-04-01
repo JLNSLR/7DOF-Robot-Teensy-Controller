@@ -1,5 +1,5 @@
 #include <RobotJoint.h>
-#include <FixPointMath.h>
+#include <Math/FixPointMath.h>
 
 // --- Filter Coefficients --- //
 float RobotJoint::a_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1] = {

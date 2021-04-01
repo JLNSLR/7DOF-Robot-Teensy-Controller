@@ -1,6 +1,6 @@
 #ifndef DIFFERENTIATOR_H
 #define DIFFERENTIATOR_H
-#include <FixPointMath.h>
+#include <Math/FixPointMath.h>
 #include <CircularBuffer.h>
 
 class Differentiator
