@@ -2,7 +2,6 @@
 #define ROBOTBUFFERS_H
 
 #include <Arduino.h>
-#include <Math/FixPointMath.h>
 #include <CircularBuffer.h>
 
 // --- Raw Input Data Buffers of the Robot Sensors --- //

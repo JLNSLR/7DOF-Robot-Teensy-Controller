@@ -4,35 +4,42 @@
 #include <RobotJoint.h>
 #include <EEPROM.h>
 
-struct PIDGains {
+struct PIDGains
+{
   float Kp;
   float Ki;
   float Kd;
 };
 
-struct PositionControllerGains {
+struct PositionControllerGains
+{
   uint8_t validity;
   PIDGains positionGains[7];
   PIDGains velocityGains[7];
   PIDGains currentGains[7];
 };
 
-struct RobotOffsets {
+struct RobotOffsets
+{
   uint8_t validity;
   float angleOffsets[7];
   float torqueOffsets[7];
 };
 
-struct RobotLimits {
+struct RobotLimits
+{
   uint8_t validity;
   float limits_r[7];
   float limits_l[7];
 };
 
-class Manipulator {
+class Manipulator
+{
 
 public:
   Manipulator();
+
+  Manipulator(const Manipulator &) = delete;
 
   static const int numberOfJoints = 7;
 

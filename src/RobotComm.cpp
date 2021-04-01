@@ -1,5 +1,12 @@
 #include <RobotComm.h>
 
+RobotComm::RobotComm()
+{
+}
+RobotComm::RobotComm(Manipulator *robot)
+{
+  this->robot = robot;
+}
 String *RobotComm::decomposeMsg(String input)
 {
   int length = input.length();
@@ -7,7 +14,7 @@ String *RobotComm::decomposeMsg(String input)
   int pos_next = 0;
   int element = 0;
   bool end = false;
-#define MAX_ELEMENTS 10
+#define MAX_ELEMENTS 20
   String output[MAX_ELEMENTS];
   do
   {
@@ -16,7 +23,12 @@ String *RobotComm::decomposeMsg(String input)
     element++;
     pos = pos_next;
 
-  } while (input.charAt(pos + 1) != ';' || element > MAX_ELEMENTS);
+    if (pos >= input.length() || pos_next == -1)
+    {
+      end = true;
+    }
+
+  } while (input.charAt(pos + 1) != ';' || element < MAX_ELEMENTS || !end);
 
   return output;
 }
@@ -41,6 +53,9 @@ void RobotComm::parseStringCommand(String *msg)
     break;
   case 't':
     processTargetCommand(msg);
+    break;
+  case 'a':
+    processActivateOutputCommand(msg);
     break;
   }
 }
@@ -116,19 +131,19 @@ void RobotComm::processPIDTuneCommand(String command[6])
   switch (type)
   {
   case 'p':
-    robot->robotJoints[joint_id].positionController.kp = float2Fix(kp);
-    robot->robotJoints[joint_id].positionController.ki = float2Fix(ki);
-    robot->robotJoints[joint_id].positionController.kd = float2Fix(kd);
+    robot->robotJoints[joint_id].positionController.kp = kp;
+    robot->robotJoints[joint_id].positionController.ki = ki;
+    robot->robotJoints[joint_id].positionController.kd = kd;
     break;
   case 'v':
-    robot->robotJoints[joint_id].velocityController.kp = float2Fix(kp);
-    robot->robotJoints[joint_id].velocityController.ki = float2Fix(ki);
-    robot->robotJoints[joint_id].velocityController.kd = float2Fix(kd);
+    robot->robotJoints[joint_id].velocityController.kp = kp;
+    robot->robotJoints[joint_id].velocityController.ki = ki;
+    robot->robotJoints[joint_id].velocityController.kd = kd;
     break;
   case 'i':
-    robot->robotJoints[joint_id].currentController.kp = float2Fix(kp);
-    robot->robotJoints[joint_id].currentController.ki = float2Fix(ki);
-    robot->robotJoints[joint_id].currentController.kd = float2Fix(kd);
+    robot->robotJoints[joint_id].currentController.kp = kp;
+    robot->robotJoints[joint_id].currentController.ki = ki;
+    robot->robotJoints[joint_id].currentController.kd = kd;
     break;
   }
 }
@@ -140,21 +155,34 @@ void RobotComm::processTargetCommand(String command[5])
   float velocity_target = command[3].toFloat();
   float acceleration_target = command[4].toFloat();
 
-  robot->robotJoints[joint_id].posiion_target = float2Fix(position_target);
-  robot->robotJoints[joint_id].velocity_target = float2Fix(velocity_target);
+  robot->robotJoints[joint_id].posiion_target = position_target;
+  robot->robotJoints[joint_id].velocity_target = velocity_target;
   robot->robotJoints[joint_id].acceleration_target =
-      float2Fix(acceleration_target);
+      acceleration_target;
 }
 
 void RobotComm::processActivateOutputCommand(String command[7])
 {
-  int joint_id = command[1].toInt();
+  output_joint_id = command[1].toInt();
   mode = (outputMode)command[2].toInt();
+
+  printLegend();
+}
+
+void RobotComm::readInputCommands()
+{
+  if (micros() - last_input > serialInputPeriod)
+  {
+    last_input = micros();
+    String msg = Serial.readStringUntil(';');
+    parseStringCommand(decomposeMsg(msg));
+  }
 }
 
 void RobotComm::periodicSerialOutput()
 {
   if (micros() - last_output > serialOutputPeriod)
+    last_output = micros();
   {
 
     switch (mode)
@@ -372,4 +400,49 @@ void RobotComm::printSerialAllData()
   Serial.print(robot->robotJoints[5].getCurrent());
   Serial.print(',');
   Serial.println(robot->robotJoints[6].getCurrent());
+}
+
+void RobotComm::printLegend()
+{
+  String legend = "";
+  switch (mode)
+  {
+  case position:
+    legend = "Joint ";
+    legend += output_joint_id + " Angle [rad]:";
+    Serial.println(legend);
+    break;
+  case traj:
+    legend = "Joint ";
+    legend += output_joint_id + " Angle [rad]:";
+    legend += ",Velocity [rad/s]:,Acceleration [rad/s^2]:";
+    Serial.println(legend);
+    break;
+  case torque:
+    legend = "Joint ";
+    legend += output_joint_id + " Torque [Nm]:";
+    Serial.println(legend);
+    break;
+  case curr:
+    legend = "Joint ";
+    legend += output_joint_id + " Current [mA]:";
+    Serial.println(legend);
+    break;
+  case joint:
+    legend = "Joint ";
+    legend += output_joint_id + " Angle [rad]:";
+    legend += ",Velocity [rad/s]:,Acceleration [rad/s^2]:,Torque [Nm]:,Current [mA]:";
+    Serial.println(legend);
+    break;
+  case allPosition:
+    legend = "J0:,J1:,J2:,J3:,J4:,J5:,J6:";
+    Serial.println(legend);
+    break;
+  case allTraj:
+    break;
+  case allData:
+    break;
+  default:
+    break;
+  }
 }

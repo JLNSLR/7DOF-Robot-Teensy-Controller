@@ -6,15 +6,10 @@ Differentiator::Differentiator()
     buffer.unshift(0);
     buffer.unshift(0);
 };
-Differentiator::Differentiator(int32_t timestep)
-{
-    Differentiator();
-    timestep_f = timestep;
-};
 Differentiator::Differentiator(float timestep)
 {
     Differentiator();
-    timestep_f = float2Fix(timestep);
+    timestep_micro = timestep * 1000 * 1000;
 }
 Differentiator::Differentiator(int frequency)
 {
@@ -24,11 +19,13 @@ Differentiator::Differentiator(int frequency)
 
 void Differentiator::setTimeStep(float timestep)
 {
-    timestep_f = float2Fix(timestep);
+    timestep_micro = timestep * 1000 * 1000;
+    this->timestep = timestep;
 }
-void Differentiator::setTimeStep(int32_t timestep_f)
+void Differentiator::setTimeStep(int timestep)
 {
-    this->timestep_f = timestep_f;
+    this->timestep_micro = timestep;
+    timestep = timestep_micro / (1000 * 1000);
 }
 void Differentiator::setFrequency(int frequency)
 {
@@ -36,7 +33,7 @@ void Differentiator::setFrequency(int frequency)
     setTimeStep(timestep);
 }
 
-void Differentiator::setInput(int32_t input)
+void Differentiator::setInput(float input)
 {
     buffer.unshift(input);
 }
@@ -46,10 +43,10 @@ void Differentiator::differentiate()
     int32_t y_timeStepPlus = buffer.first();
     int32_t y_timeStepMinus = buffer.pop();
 
-    output = divide(y_timeStepPlus - y_timeStepMinus, multiply(timestep_f, 2));
+    output = (y_timeStepPlus - y_timeStepMinus) / timestep * 2;
 }
 
-int32_t Differentiator::getOutput()
+float Differentiator::getOutput()
 {
     return output;
 }

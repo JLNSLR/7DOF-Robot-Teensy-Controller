@@ -1,5 +1,4 @@
 #include <RobotJoint.h>
-#include <Math/FixPointMath.h>
 
 // --- Filter Coefficients --- //
 float RobotJoint::a_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1] = {
@@ -9,21 +8,23 @@ float RobotJoint::b_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1] = {
     0.432846644990292, 1.731386579961168, 2.597079869941751, 1.731386579961168,
     0.432846644990292};
 
-float RobotJoint::a_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {
-    0.816751544997935,  4.900509269987608,  12.251273174969020,
-    16.335030899958692, 12.251273174969020, 4.900509269987608,
-    0.816751544997935};
-float RobotJoint::b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {
-    1,
-    5.595430092802001,
-    13.058177871415467,
-    16.268238545772697,
-    11.410789023781913,
-    4.272380259839228,
-    0.667083086256514};
+float RobotJoint::a_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {1,-1.981610736719567,2.252379618156809,-1.469282954186778,0.596262579806017,-0.135440342911379,0.013563684610107};
+float RobotJoint::b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {0.004310497636800,0.025862985820801,0.064657464552002,0.086209952736003,0.064657464552002,0.025862985820801,0.004310497636800};
 
 // --- Constructors --- //
-RobotJoint::RobotJoint() {
+RobotJoint::RobotJoint()
+{
+  currentFilter.setCoefficients(a_coefficients_currentFilter,
+                                b_coefficients_currentFilter);
+  positionFilter.setCoefficients(a_coefficients_positionFilter,
+                                 b_coefficients_positionFilter);
+
+  firstDerivative.setFrequency(POS_FREQ);
+  secondDerivative.setFrequency(POS_FREQ);
+}
+
+void RobotJoint::initRobotJoint()
+{
   currentFilter.setCoefficients(a_coefficients_currentFilter,
                                 b_coefficients_currentFilter);
   positionFilter.setCoefficients(a_coefficients_positionFilter,
@@ -34,12 +35,21 @@ RobotJoint::RobotJoint() {
 }
 
 // --- Methods to process Sensor Inputs --- //
-void RobotJoint::processPositionInput() {
-  if (micros() - lastTimePositionInput > positionInputPeriod) {
+void RobotJoint::processPositionInput()
+{
+  if (micros() - lastTimePositionInput > positionInputPeriod)
+  {
     lastTimePositionInput = micros();
-    positionFilter.input =
-        convertPositionInput(jointPositionInput[joint_id].pop());
+    Serial.print("Raw pos: ");
+    Serial.println(jointPositionInput[joint_id].last());
+
+    //positionFilter.setInput(convertPositionInput(jointPositionInput[joint_id].pop()));
+    positionFilter.input = convertPositionInput(jointPositionInput[joint_id].pop());
+    Serial.print("Converted: ");
+    Serial.println(positionFilter.input);
     positionFilter.compute();
+    Serial.print("Filtered: ");
+    Serial.println(positionFilter.output);
     position.unshift(positionFilter.output);
 
     firstDerivative.setInput(positionFilter.output);
@@ -49,81 +59,98 @@ void RobotJoint::processPositionInput() {
     secondDerivative.differentiate();
     acceleration.unshift(secondDerivative.getOutput());
 
-    if (posLimit) {
-      if ((position.first() < limit_left) ^ (position.first() > limit_right)) {
+    if (posLimit)
+    {
+      if ((position.first() < limit_left) || (position.first() > limit_right))
+      {
         drive(0);
       }
     }
   }
 }
 
-void RobotJoint::processCurrentInput() {
-  if (micros() - lastTimeCurrentInput > currentInputPeriod) {
+void RobotJoint::processCurrentInput()
+{
+  if (micros() - lastTimeCurrentInput > currentInputPeriod)
+  {
     lastTimeCurrentInput = micros();
     currentFilter.input = jointCurrentInput[joint_id].pop();
     currentFilter.compute();
     current.unshift(currentFilter.output);
   }
 }
-void RobotJoint::processTorqueInput() {
-  if (micros() - lastTimeTorqueInput > currentInputPeriod) {
+void RobotJoint::processTorqueInput()
+{
+  if (micros() - lastTimeTorqueInput > currentInputPeriod)
+  {
     lastTimeTorqueInput = micros();
     torque.unshift(convertTorqueInput(jointTorqueInput[joint_id].pop()));
   }
 }
 
 /* --- Methods to control the Joint Actuation --- */
-void RobotJoint::drive(int16_t motorCommand) {
+void RobotJoint::drive(int16_t motorCommand)
+{
   controlMotorDriver(joint_id, motorCommand);
 }
 
-void RobotJoint::setPosLimits(float limit_right, float limit_left) {
+void RobotJoint::setPosLimits(float limit_right, float limit_left)
+{
   posLimit = true;
-  this->limit_left = float2Fix(limit_left);
-  this->limit_right = float2Fix(limit_right);
+  this->limit_left = limit_left;
+  this->limit_right = limit_right;
 
-  if (limit_right == 0 && limit_left == 0) {
+  if (limit_right == 0 && limit_left == 0)
+  {
     posLimit = false;
   }
 }
 
 /* --- Implementation of Utility SensorDataHandling Methods --- */
 
-int32_t RobotJoint::convertPositionInput(int16_t rawPosition) {
-  return float2Fix(CONVERSION_FACTOR_13BITPOS_RADIAN * rawPosition) -
+float RobotJoint::convertPositionInput(int16_t rawPosition)
+{
+  return (float)(double(CONVERSION_FACTOR_13BITPOS_DEG) * double(rawPosition)) -
          angle_offset;
 }
 
-int32_t RobotJoint::convertTorqueInput(int32_t rawTorque) {
-  return rawTorque; // TODO
+float RobotJoint::convertTorqueInput(int32_t rawTorque)
+{
+  return float(torqueFactor * rawTorque) - torque_offset;
 }
 
-void RobotJoint::setAngleOffsetRad(float angle_offset) {
-  angle_offset = float2Fix(angle_offset);
+void RobotJoint::setAngleOffsetRad(float angle_offset)
+{
+  this->angle_offset = angle_offset;
 }
-void RobotJoint::setAngleOffsetDeg(float angle_offset) {
-  angle_offset = float2Fix(angle_offset * DEG2RAD);
+void RobotJoint::setAngleOffsetDeg(float angle_offset)
+{
+  this->angle_offset = angle_offset * DEG2RAD;
 }
-void RobotJoint::setTorqueOffsetNm(float torqueOffset) {
-  torque_offset = float2Fix(torqueOffset);
-}
-
-float RobotJoint::getAngleRad() { return fix2Float(position.last()); }
-float RobotJoint::getVelocityRad() { return fix2Float(velocity.last()); }
-float RobotJoint::getAccelerationRad() {
-  return fix2Float(acceleration.last());
+void RobotJoint::setTorqueOffsetNm(float torqueOffset)
+{
+  torque_offset = torqueOffset;
 }
 
-float RobotJoint::getAngleDeg() { return fix2Float(position.last()) * RAD2DEG; }
-float RobotJoint::getVelocityDeg() {
-  return fix2Float(velocity.last()) * RAD2DEG;
-}
-float RobotJoint::getAccelerationDeg() {
-  return fix2Float(acceleration.last()) * RAD2DEG;
+float RobotJoint::getAngleRad() { return position.last(); }
+float RobotJoint::getVelocityRad() { return velocity.last(); }
+float RobotJoint::getAccelerationRad()
+{
+  return acceleration.last();
 }
 
-float RobotJoint::getTorque() { return fix2Float(torque.last()); }
-float RobotJoint::getCurrent() { return fix2Float(current.last()); }
+float RobotJoint::getAngleDeg() { return position.last() * RAD2DEG; }
+float RobotJoint::getVelocityDeg()
+{
+  return velocity.last() * RAD2DEG;
+}
+float RobotJoint::getAccelerationDeg()
+{
+  return acceleration.last() * RAD2DEG;
+}
 
-float RobotJoint::getLimitR() { return fix2Float(limit_right); };
-float RobotJoint::getLimitL() { return fix2Float(limit_left); }
+float RobotJoint::getTorque() { return torque.last(); }
+float RobotJoint::getCurrent() { return current.last(); }
+
+float RobotJoint::getLimitR() { return limit_right; };
+float RobotJoint::getLimitL() { return limit_left; }

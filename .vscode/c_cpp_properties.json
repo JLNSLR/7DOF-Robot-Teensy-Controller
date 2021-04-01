@@ -10,9 +10,6 @@
             "includePath": [
                 "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/include",
                 "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/src",
-                "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/src/PID",
-                "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/src/Filters",
-                "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/src/Math",
                 "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/lib/FlexCAN_T4",
                 "C:/Users/jseil/.platformio/packages/framework-arduinoteensy/libraries/EEPROM",
                 "C:/dev/Crudebot-Project/7DOF-Robot-Teensy-Controller/.pio/libdeps/teensy41/CircularBuffer",
@@ -112,7 +109,8 @@
                 "C:/Users/jseil/.platformio/packages/framework-arduinoteensy/libraries/i2c_t3",
                 "C:/Users/jseil/.platformio/packages/framework-arduinoteensy/libraries/ks0108",
                 "C:/Users/jseil/.platformio/packages/framework-arduinoteensy/libraries/ssd1351",
-                "C:/Users/jseil/.platformio/packages/framework-arduinoteensy/libraries/x10"
+                "C:/Users/jseil/.platformio/packages/framework-arduinoteensy/libraries/x10",
+                ""
             ],
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,

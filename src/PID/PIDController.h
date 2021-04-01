@@ -2,7 +2,6 @@
 #define PIDCONTROLLER_H
 
 #include "Arduino.h"
-#include "Math/FixPointMath.h"
 
 #define MANUAL 0
 #define AUTOMATIC 1
@@ -15,16 +14,16 @@ PID Controller class using the fix point math in signed 32-bit arithmetics
 */
 class PIDController
 {
-    public:
+public:
     PIDController();
-    PIDController(int32_t kp, int32_t ki, int32_t kd);
+    PIDController(float kp, float ki, float kd);
 
     void compute();
-    void setTuning(int32_t kp, int32_t ki, int32_t kd);
+    void setTuning(float kp, float ki, float kd);
 
-    void setSampleTime(int32_t newSampleTime);
+    void setSampleTime(float newSampleTime);
 
-    void setOutputLimits(int32_t min, int32_t max);
+    void setOutputLimits(float min, float max);
 
     void setMode(int Mode);
 
@@ -33,26 +32,21 @@ class PIDController
     void SetControllerDirection(int Direction);
 
     /* ---  working variables --- */
-    
 
-    int32_t kp, ki, kd;
+    float kp, ki, kd;
 
+    float input, output, setpoint;
+    float iTerm, lastInput;
 
-    int32_t input, output, setpoint;
-    int32_t iTerm, lastInput;
-
-    int32_t sampleTime;
+    int sampleTime; //microseconds
 
     unsigned long lastTime;
 
-    int32_t outMin, outMax;
+    float outMin, outMax;
 
     bool inAuto;
 
     int controllerDirection = DIRECT;
-
-    
 };
-
 
 #endif //PIDCONTROLLER_H

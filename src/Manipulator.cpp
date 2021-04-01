@@ -1,15 +1,47 @@
 #include <Manipulator.h>
 
-Manipulator::Manipulator() {
+Manipulator::Manipulator()
+{
 
   // Init Joints with standard values
-  for (int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++)
+  {
     robotJoints[i].setAngleOffsetRad(angle_offsets[i]);
     robotJoints[i].setTorqueOffsetNm(torqueOffsets[i]);
   }
 };
 
-void Manipulator::initManipulator() {
+void Manipulator::initManipulator()
+{
+
+  // Set Motor and Current Sensor Ids
+  robotJoints[0].joint_id = 0;
+  robotJoints[0].motorControllerId = 0;
+  robotJoints[0].currentSensorId = 0;
+
+  robotJoints[1].joint_id = 1;
+  robotJoints[1].motorControllerId = 1;
+  robotJoints[1].currentSensorId = 1;
+
+  robotJoints[2].joint_id = 2;
+  robotJoints[2].motorControllerId = 2;
+  robotJoints[2].currentSensorId = 2;
+
+  robotJoints[3].joint_id = 3;
+  robotJoints[3].motorControllerId = 3;
+  robotJoints[3].currentSensorId = 3;
+
+  robotJoints[4].joint_id = 4;
+  robotJoints[4].motorControllerId = 4;
+  robotJoints[4].currentSensorId = 4;
+
+  robotJoints[5].joint_id = 5;
+  robotJoints[5].motorControllerId = 5;
+  robotJoints[5].currentSensorId = 5;
+
+  robotJoints[6].joint_id = 6;
+  robotJoints[6].motorControllerId = 6;
+  robotJoints[6].currentSensorId = 6;
 
   // --- Read Initializaton Data from Memory
   readOffsetDataFromMemory();
@@ -17,114 +49,131 @@ void Manipulator::initManipulator() {
   readLimitDataFromMemory();
 }
 
-void Manipulator::processJointSensors() {
-  for (int i = 0; i < numberOfJoints; i++) {
+void Manipulator::processJointSensors()
+{
+  for (int i = 0; i < numberOfJoints; i++)
+  {
     robotJoints[i].processCurrentInput();
     robotJoints[i].processPositionInput();
     robotJoints[i].processTorqueInput();
   }
 }
 
-void Manipulator::readOffsetDataFromMemory() {
+void Manipulator::readOffsetDataFromMemory()
+{
   struct RobotOffsets offsets;
 
   EEPROM.get(offset_addresses, offsets);
 
-  if (offsets.validity == validity_key) {
-    for (int i = 0; i < 7; i++) {
+  if (offsets.validity == validity_key)
+  {
+    for (int i = 0; i < 7; i++)
+    {
       robotJoints[i].setAngleOffsetRad(offsets.angleOffsets[i]);
       robotJoints[i].setTorqueOffsetNm(offsets.torqueOffsets[i]);
     }
   }
 };
 
-void Manipulator::readGainDataFromMemory() {
+void Manipulator::readGainDataFromMemory()
+{
   struct PositionControllerGains gains;
 
   EEPROM.get(controllerGain_address, gains);
 
-  if (gains.validity == validity_key) {
-    for (int i = 0; i < 7; i++) {
+  if (gains.validity == validity_key)
+  {
+    for (int i = 0; i < 7; i++)
+    {
       robotJoints[i].positionController.kp =
-          float2Fix(gains.positionGains[i].Kp);
+          gains.positionGains[i].Kp;
       robotJoints[i].positionController.ki =
-          float2Fix(gains.positionGains[i].Ki);
+          gains.positionGains[i].Ki;
       robotJoints[i].positionController.kd =
-          float2Fix(gains.positionGains[i].Kd);
+          gains.positionGains[i].Kd;
 
       robotJoints[i].velocityController.kp =
-          float2Fix(gains.velocityGains[i].Kp);
+          gains.velocityGains[i].Kp;
       robotJoints[i].velocityController.ki =
-          float2Fix(gains.velocityGains[i].Ki);
+          gains.velocityGains[i].Ki;
       robotJoints[i].velocityController.kd =
-          float2Fix(gains.velocityGains[i].Kd);
+          gains.velocityGains[i].Kd;
 
       robotJoints[i].currentController.kp =
-          float2Fix((gains.currentGains[i].Kp));
+          gains.currentGains[i].Kp;
       robotJoints[i].velocityController.ki =
-          float2Fix(gains.velocityGains[i].Ki);
+          gains.velocityGains[i].Ki;
       robotJoints[i].velocityController.kd =
-          float2Fix(gains.velocityGains[i].Kd);
+          gains.velocityGains[i].Kd;
     }
   }
 }
 
-void Manipulator::readLimitDataFromMemory() {
+void Manipulator::readLimitDataFromMemory()
+{
   struct RobotLimits limits;
 
   EEPROM.get(limitAdresses, limits);
 
-  if (limits.validity == validity_key) {
-    for (int i = 0; i < 7; i++) {
+  if (limits.validity == validity_key)
+  {
+    for (int i = 0; i < 7; i++)
+    {
       robotJoints[i].setPosLimits(limits.limits_r[i], limits.limits_l[i]);
     }
   }
 }
 
-void Manipulator::saveOffsetData() {
+void Manipulator::saveOffsetData()
+{
   struct RobotOffsets offsetData;
   offsetData.validity = validity_key;
-  for (int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++)
+  {
     offsetData.angleOffsets[i] = angle_offsets[i];
   }
   EEPROM.put(offset_addresses, offsetData);
 };
 
-void Manipulator::saveLimitData() {
+void Manipulator::saveLimitData()
+{
   struct RobotLimits limits;
   limits.validity = validity_key;
-  for (int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++)
+  {
     limits.limits_r[i] = robotJoints[i].getLimitR();
     limits.limits_l[i] = robotJoints[i].getLimitL();
   }
   EEPROM.put(limitAdresses, limits);
 };
 
-void Manipulator::saveGainData() {
+void Manipulator::saveGainData()
+{
   PositionControllerGains gainMemory;
   gainMemory.validity = validity_key;
 
-  for (int i = 0; i < 7; i++) {
+  for (int i = 0; i < 7; i++)
+  {
     gainMemory.positionGains[i].Kp =
-        fix2Float(robotJoints[i].positionController.kp);
+        robotJoints[i].positionController.kp;
     gainMemory.positionGains[i].Ki =
-        fix2Float(robotJoints[i].positionController.ki);
+        robotJoints[i].positionController.ki;
     gainMemory.positionGains[i].Kd =
-        fix2Float(robotJoints[i].positionController.kd);
+        robotJoints[i].positionController.kd;
 
     gainMemory.velocityGains[i].Kp =
-        fix2Float(robotJoints[i].velocityController.kp);
+        robotJoints[i].velocityController.kp;
     gainMemory.velocityGains[i].Ki =
-        fix2Float(robotJoints[i].velocityController.ki);
+        robotJoints[i].velocityController.ki;
     gainMemory.velocityGains[i].Kd =
-        fix2Float(robotJoints[i].velocityController.kd);
+        robotJoints[i].velocityController.kd;
 
     gainMemory.currentGains[i].Kp =
-        fix2Float(robotJoints[i].currentController.kp);
+        robotJoints[i].currentController.kp;
     gainMemory.currentGains[i].Ki =
-        fix2Float(robotJoints[i].currentController.ki);
+        robotJoints[i].currentController.ki;
     gainMemory.currentGains[i].Kd =
-        fix2Float(robotJoints[i].currentController.kd);
+        robotJoints[i].currentController.kd;
   }
 
   EEPROM.put(controllerGain_address, gainMemory);

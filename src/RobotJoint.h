@@ -14,16 +14,20 @@
 #define POSITION_FILTER_ORDER 6
 #define TORQUE_FILTER_ORDER 4
 
-#define CONVERSION_FACTOR_13BITPOS_RADIAN 0.0003835
+#define CONVERSION_FACTOR_13BITPOS_DEG 0.02197
+#define CONVERSIoN_FACTOR_13BITPOS_RAD 0.0003834951
 #define DEG2RAD 0.0017453
 #define RAD2DEG 57.29578
 
 #define POS_FREQ 300
 #define TORQUE_FREQ 300
 
-class RobotJoint {
+class RobotJoint
+{
 public:
   RobotJoint();
+
+  RobotJoint(const RobotJoint &) = delete;
 
   uint8_t joint_id;
   uint8_t motorControllerId;
@@ -34,28 +38,28 @@ public:
   bool currentLimit = false;
   bool torqueLimit = false;
 
-  float maxSpeed;        // in rad/s
-  float maxAcceleration; // in rad/s^2
+  float maxSpeed;        // in deg/s
+  float maxAcceleration; // in deg/s^2
   float maxTorque;
   float maxCurrent;
 
-  CircularBuffer<int32_t, 100> position;
-  CircularBuffer<int32_t, 100> velocity;
-  CircularBuffer<int32_t, 100> acceleration;
-  CircularBuffer<int32_t, 100> torque;
-  CircularBuffer<int32_t, 100> current;
+  CircularBuffer<float, 50> position;
+  CircularBuffer<float, 50> velocity;
+  CircularBuffer<float, 50> acceleration;
+  CircularBuffer<float, 50> torque;
+  CircularBuffer<float, 50> current;
 
   PIDController positionController;
   PIDController velocityController;
   PIDController currentController;
 
   int16_t motorCommand;
-  int32_t velocity_target;
-  int32_t posiion_target;
-  int32_t current_target;
-  int32_t acceleration_target;
+  float velocity_target;
+  float posiion_target;
+  float current_target;
+  float acceleration_target;
 
-  int32_t torque_target;
+  float torque_target;
 
   static float a_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1];
   static float b_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1];
@@ -71,6 +75,8 @@ public:
   void processPositionInput();
   void processCurrentInput();
   void processTorqueInput();
+
+  void initRobotJoint();
 
   void setAngleOffsetRad(float angle_offset);
   void setAngleOffsetDeg(float angle_offset);
@@ -96,18 +102,20 @@ private:
   int lastTimeTorqueInput = 0;
   int lastTimeCurrentInput = 0;
 
+  float torqueFactor = 1 / 100;
+
   const static int positionInputPeriod = 3333;
   const static int currentInputPeriod = 400;
   const static int torqueInputPeruid = 3333;
 
-  int32_t angle_offset = 0;
-  int32_t torque_offset = 0;
+  float angle_offset = 0;
+  float torque_offset = 0;
 
-  int32_t limit_left = 0;
-  int32_t limit_right = 0;
+  float limit_left = 0;
+  float limit_right = 0;
 
-  int32_t convertPositionInput(int16_t rawPosition);
-  int32_t convertTorqueInput(int32_t rawTorque);
+  float convertPositionInput(int16_t rawPosition);
+  float convertTorqueInput(int32_t rawTorque);
 
   Differentiator firstDerivative;
   Differentiator secondDerivative;

@@ -61,10 +61,11 @@ public:
   Manipulator *robot;
 
   int serialOutputPeriod = 3333;
+  int serialInputPeriod = 3333;
 
-  void activateSerialSensorOutput(int joint_id, bool position, bool velocity,
-                                  bool acceleration, bool torque, bool current);
   void periodicSerialOutput();
+
+  void readInputCommands();
 
 private:
   String *decomposeMsg(String msg);
@@ -98,7 +99,9 @@ private:
 
   void printSerialAllData();
 
-  int output_joint_id;
+  void printLegend();
+
+  int output_joint_id = 0;
   enum outputMode
   {
     position,
@@ -111,9 +114,10 @@ private:
     allData
   };
 
-  outputMode mode;
+  outputMode mode = position;
 
   int last_output = 0;
+  int last_input = 0;
 };
 
 #endif // ROBOTCOMM_H

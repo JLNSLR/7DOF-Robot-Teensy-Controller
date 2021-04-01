@@ -7,6 +7,8 @@
 
 #define CAN_BAUDRATE 1000000
 
+#define CAN_DEBUG_ENCODER
+
 #ifdef CAN_COUNTER
 int encoderCount = 0;
 int torqueCount = 0;
