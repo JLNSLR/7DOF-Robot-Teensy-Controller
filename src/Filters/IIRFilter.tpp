@@ -85,8 +85,6 @@ void IIRFilter<order>::compute()
     float w_n = 0;
     for (unsigned int n = 1; n < length; n++)
     {
-        Serial.println(buffer[n]);
-        Serial.println(w_n);
         w_n -= a_coefficients[n] * buffer[n - 1];
     }
     w_n += input;

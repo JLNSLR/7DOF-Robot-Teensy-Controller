@@ -7,8 +7,6 @@
 
 #define CAN_BAUDRATE 1000000
 
-#define CAN_DEBUG_ENCODER
-
 #ifdef CAN_COUNTER
 int encoderCount = 0;
 int torqueCount = 0;
@@ -20,9 +18,9 @@ FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> canBus;
 
 Circular_Buffer<CAN_message_t *, 1000> canBuffer;
 
-CircularBuffer<int16_t, 100> jointPositionInput[7];
-CircularBuffer<int32_t, 100> jointTorqueInput[7];
-CircularBuffer<int16_t, 100> jointCurrentInput[7];
+CircularBuffer<int16_t, 15> jointPositionInput[7];
+CircularBuffer<int32_t, 15> jointTorqueInput[7];
+CircularBuffer<int16_t, 15> jointCurrentInput[7];
 
 void canInit()
 {
@@ -65,10 +63,11 @@ void processCanMsgs(const CAN_message_t &can_msg)
         Serial.print(torqueData.joint_id);
         Serial.print(" torque Value: ");
         Serial.println(torqueData.torqueValue);
+        Serial.println(jointTorqueInput[torqueData.joint_id].last());
 #endif
 
 #ifdef CAN_COUNTER
-        torqueCount++;
+            torqueCount++;
 #endif
         break;
     }

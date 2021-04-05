@@ -51,6 +51,14 @@ struct robotStateVector
   float jointCurrents[7];
 };
 
+struct robotMsg
+{
+  char top_type;
+  char medium_type;
+  char low_type;
+  float values[35];
+};
+
 class RobotComm
 {
 
@@ -68,20 +76,20 @@ public:
   void readInputCommands();
 
 private:
-  String *decomposeMsg(String msg);
-  void parseStringCommand(String *msg);
+  robotMsg decomposeMsg(String msg);
+  void parseRobotCommand(robotMsg msg);
 
-  void processActuationCommand(String commands[3]);
+  void processActuationCommand(robotMsg commands);
 
-  void processOffsetCommand(String commands[4]);
+  void processOffsetCommand(robotMsg commands);
 
-  void processLimitCommand(String commands[4]);
+  void processLimitCommand(robotMsg commands);
 
-  void processPIDTuneCommand(String commands[5]);
+  void processPIDTuneCommand(robotMsg commands);
 
-  void processTargetCommand(String commands[5]);
+  void processTargetCommand(robotMsg commands);
 
-  void processActivateOutputCommand(String commands[5]);
+  void processActivateOutputCommand(robotMsg commands);
 
   void printSerialPosition(int joint_id);
 
@@ -101,7 +109,7 @@ private:
 
   void printLegend();
 
-  int output_joint_id = 0;
+  int output_joint_id = 4;
   enum outputMode
   {
     position,
@@ -114,7 +122,7 @@ private:
     allData
   };
 
-  outputMode mode = position;
+  outputMode mode = allPosition;
 
   int last_output = 0;
   int last_input = 0;

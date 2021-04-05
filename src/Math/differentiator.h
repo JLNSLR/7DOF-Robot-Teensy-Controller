@@ -10,22 +10,25 @@ public:
     Differentiator(int frequency);
 
     void differentiate();
-    void setTimeStep(float timestep); //seconds
-    void setTimeStep(int timestep);   //microseconds
+    void setTimeStep(double timestep); //seconds
+    void setTimeStep(int timestep);    //microseconds
     void setFrequency(int frequency);
 
     void setInput(float input);
     float getOutput();
 
 private:
-    float timestep = 0.003333;
+    double timestep = 0.003333;
 
     int timestep_micro = 3333;
 
     CircularBuffer<float, 3> buffer;
+    int smoother_length = 20;
+    CircularBuffer<float, 20> smoother;
 
-    int32_t input = 0;
-    int32_t output = 0;
+
+    float input = 0;
+    float output = 0;
 };
 
 #endif //DIFFERENTIATOR_H

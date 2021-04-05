@@ -2,15 +2,15 @@
 
 // --- Filter Coefficients --- //
 float RobotJoint::a_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1] = {
-    1, 2.369513007182038, 2.313988414415880, 1.054665405878567,
-    0.187379492368185};
+    1, -2.048395137764509, 1.841785841678162, -0.782440103120936, 0.131680715038692};
 float RobotJoint::b_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1] = {
-    0.432846644990292, 1.731386579961168, 2.597079869941751, 1.731386579961168,
-    0.432846644990292};
+    0.008914457239463, 0.035657828957852, 0.053486743436778, 0.035657828957852, 0.008914457239463};
 
-float RobotJoint::a_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {1,-1.981610736719567,2.252379618156809,-1.469282954186778,0.596262579806017,-0.135440342911379,0.013563684610107};
-float RobotJoint::b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {0.004310497636800,0.025862985820801,0.064657464552002,0.086209952736003,0.064657464552002,0.025862985820801,0.004310497636800};
+float RobotJoint::a_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {1, -2.778697797137459, 3.695151114840509, -2.808948781412266, 1.269735725150560, -0.319109994335365, 0.034611206062462};
+float RobotJoint::b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1] = {0.001449085518257, 0.008694513109541, 0.021736282773853, 0.028981710365138, 0.021736282773853, 0.008694513109541, 0.001449085518257};
 
+float RobotJoint::a_coefficients_torqueFilter[TORQUE_FILTER_ORDER + 1] = {1, -2.638627743891246, 2.769309786151484, -1.339280761265202, 0.249821669810126};
+float RobotJoint::b_coefficients_torqueFilter[TORQUE_FILTER_ORDER + 1] = {0.002576434425323, 0.010305737701291, 0.015458606551936, 0.010305737701291, 0.002576434425323};
 // --- Constructors --- //
 RobotJoint::RobotJoint()
 {
@@ -29,9 +29,11 @@ void RobotJoint::initRobotJoint()
                                 b_coefficients_currentFilter);
   positionFilter.setCoefficients(a_coefficients_positionFilter,
                                  b_coefficients_positionFilter);
+  torqueFilter.setCoefficients(a_coefficients_torqueFilter, b_coefficients_torqueFilter);
 
-  firstDerivative.setFrequency(POS_FREQ);
-  secondDerivative.setFrequency(POS_FREQ);
+  for(int i = 0; i<20;i++){
+    currentAverage.unshift(0);
+  }
 }
 
 // --- Methods to process Sensor Inputs --- //
@@ -40,30 +42,25 @@ void RobotJoint::processPositionInput()
   if (micros() - lastTimePositionInput > positionInputPeriod)
   {
     lastTimePositionInput = micros();
-    Serial.print("Raw pos: ");
-    Serial.println(jointPositionInput[joint_id].last());
-
-    //positionFilter.setInput(convertPositionInput(jointPositionInput[joint_id].pop()));
-    positionFilter.input = convertPositionInput(jointPositionInput[joint_id].pop());
-    Serial.print("Converted: ");
-    Serial.println(positionFilter.input);
+    positionFilter.input = convertPositionInput(jointPositionInput[joint_id].shift());
     positionFilter.compute();
-    Serial.print("Filtered: ");
-    Serial.println(positionFilter.output);
     position.unshift(positionFilter.output);
+    //Serial.println(positionFilter.output);
 
     firstDerivative.setInput(positionFilter.output);
     firstDerivative.differentiate();
     velocity.unshift(firstDerivative.getOutput());
+    //Serial.println(firstDerivative.getOutput());
     secondDerivative.setInput(firstDerivative.getOutput());
     secondDerivative.differentiate();
     acceleration.unshift(secondDerivative.getOutput());
 
     if (posLimit)
     {
-      if ((position.first() < limit_left) || (position.first() > limit_right))
+      if (hitJointLimit())
       {
         drive(0);
+        Serial.println("JOINT LIMIT HIT");
       }
     }
   }
@@ -74,9 +71,16 @@ void RobotJoint::processCurrentInput()
   if (micros() - lastTimeCurrentInput > currentInputPeriod)
   {
     lastTimeCurrentInput = micros();
-    currentFilter.input = jointCurrentInput[joint_id].pop();
+    currentFilter.input = readCurrentSensor(currentSensorId);
     currentFilter.compute();
-    current.unshift(currentFilter.output);
+    currentAverage.unshift(currentFilter.output);
+
+    float averageValue = 0;
+    for (int i = 0; i < 10; i++)
+    {
+      averageValue += currentAverage[i];
+    }
+    current.unshift(averageValue / 10);
   }
 }
 void RobotJoint::processTorqueInput()
@@ -84,14 +88,24 @@ void RobotJoint::processTorqueInput()
   if (micros() - lastTimeTorqueInput > currentInputPeriod)
   {
     lastTimeTorqueInput = micros();
-    torque.unshift(convertTorqueInput(jointTorqueInput[joint_id].pop()));
+    torqueFilter.input = (jointTorqueInput[joint_id].shift());
+    torqueFilter.compute();
+    torque.unshift(torqueFilter.output);
   }
 }
 
 /* --- Methods to control the Joint Actuation --- */
 void RobotJoint::drive(int16_t motorCommand)
 {
-  controlMotorDriver(joint_id, motorCommand);
+  if (posLimit)
+  {
+    if (hitJointLimit())
+    {
+      controlMotorDriver(motorControllerId, 0);
+      return;
+    }
+  }
+  controlMotorDriver(motorControllerId, motorCommand);
 }
 
 void RobotJoint::setPosLimits(float limit_right, float limit_left)
@@ -116,7 +130,7 @@ float RobotJoint::convertPositionInput(int16_t rawPosition)
 
 float RobotJoint::convertTorqueInput(int32_t rawTorque)
 {
-  return float(torqueFactor * rawTorque) - torque_offset;
+  return (float)torqueFactor * (float)rawTorque - torque_offset;
 }
 
 void RobotJoint::setAngleOffsetRad(float angle_offset)
@@ -125,7 +139,7 @@ void RobotJoint::setAngleOffsetRad(float angle_offset)
 }
 void RobotJoint::setAngleOffsetDeg(float angle_offset)
 {
-  this->angle_offset = angle_offset * DEG2RAD;
+  this->angle_offset = angle_offset;
 }
 void RobotJoint::setTorqueOffsetNm(float torqueOffset)
 {
@@ -154,3 +168,16 @@ float RobotJoint::getCurrent() { return current.last(); }
 
 float RobotJoint::getLimitR() { return limit_right; };
 float RobotJoint::getLimitL() { return limit_left; }
+
+bool RobotJoint::hitJointLimit()
+{
+  float pos = position.last();
+
+  if ((pos < limit_left) || (pos > limit_right))
+  {
+    Serial.print("Hit Joint Limit: ");
+    Serial.println(joint_id);
+    return true;
+  }
+  return false;
+}

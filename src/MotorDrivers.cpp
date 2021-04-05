@@ -157,7 +157,7 @@ int16_t readCurrentSensor(int sensorId)
     return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
     break;
   case 1:
-    return processCurrentSensor(I30A, currentSensorPins[sensorId], sensorId);
+    return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
     break;
   case 2:
     return processCurrentSensor(I30A, currentSensorPins[sensorId], sensorId);

@@ -43,11 +43,11 @@ public:
   float maxTorque;
   float maxCurrent;
 
-  CircularBuffer<float, 50> position;
-  CircularBuffer<float, 50> velocity;
-  CircularBuffer<float, 50> acceleration;
-  CircularBuffer<float, 50> torque;
-  CircularBuffer<float, 50> current;
+  CircularBuffer<float, 5> position;
+  CircularBuffer<float, 5> velocity;
+  CircularBuffer<float, 5> acceleration;
+  CircularBuffer<float, 5> torque;
+  CircularBuffer<float, 5> current;
 
   PIDController positionController;
   PIDController velocityController;
@@ -67,8 +67,13 @@ public:
   static float a_coefficients_positionFilter[POSITION_FILTER_ORDER + 1];
   static float b_coefficients_positionFilter[POSITION_FILTER_ORDER + 1];
 
+  static float a_coefficients_torqueFilter[TORQUE_FILTER_ORDER + 1];
+  static float b_coefficients_torqueFilter[TORQUE_FILTER_ORDER + 1];
+
   IIRFilter<CURRENT_FILTER_ORDER> currentFilter;
   IIRFilter<POSITION_FILTER_ORDER> positionFilter;
+
+  IIRFilter<TORQUE_FILTER_ORDER> torqueFilter;
 
   void drive(int16_t motorCommand);
 
@@ -102,7 +107,7 @@ private:
   int lastTimeTorqueInput = 0;
   int lastTimeCurrentInput = 0;
 
-  float torqueFactor = 1 / 100;
+  float torqueFactor = 0.01;
 
   const static int positionInputPeriod = 3333;
   const static int currentInputPeriod = 400;
@@ -119,6 +124,10 @@ private:
 
   Differentiator firstDerivative;
   Differentiator secondDerivative;
+
+  CircularBuffer<float, 10> currentAverage;
+
+  bool hitJointLimit();
 };
 
 #endif // ROBOTJOINT_H

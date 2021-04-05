@@ -9,6 +9,7 @@
 #include <MotorDrivers.h>
 #include <Manipulator.h>
 #include <RobotComm.h>
+#include <Math.h>
 
 CAN_message_t msg;
 int lastCount = 0;
@@ -16,9 +17,10 @@ int lastCount = 0;
 int lastdirection_1 = 0;
 int lastdirection_2 = 0;
 bool direction = true;
+int n = 0;
 
-//Manipulator robot;
-//RobotComm communication;
+Manipulator robot;
+RobotComm communication;
 
 RobotJoint joint_test;
 
@@ -39,8 +41,8 @@ void setup()
   sendRGBCommand(4, 128, 0, 0);
   sendRGBCommand(6, 128, 0, 0);
 
-  //robot.initManipulator();
-  //communication.robot = &robot;
+  robot.initManipulator();
+  communication.robot = &robot;
 
   delay(1000);
 
@@ -49,22 +51,42 @@ void setup()
   sendRGBCommand(3, 128, 128, 0);
   sendRGBCommand(4, 128, 128, 0);
   sendRGBCommand(6, 128, 128, 0);
-
-  joint_test.joint_id = 1;
-  joint_test.motorControllerId = 1;
-  joint_test.currentSensorId = 1;
+  /*
+  joint_test.joint_id = 0;
+  joint_test.motorControllerId = 0;
+  joint_test.currentSensorId = 0;
 
   joint_test.initRobotJoint();
+  */
 }
 
 void loop()
 {
   canBus.events(); //Push received interrupt frames from queue to callback
-  //robot.processJointSensors();
-  //communication.periodicSerialOutput();
-  //communication.readInputCommands();
+  robot.processJointSensors();
+  communication.periodicSerialOutput();
+  communication.readInputCommands();
 
-  joint_test.processPositionInput();
+  //joint_test.processPositionInput();
+  //joint_test.processCurrentInput();
+  //Serial.println(readCurrentSensor(1));
+  //Serial.println(robot.robotJoints[2].getCurrent());
+  //Serial.println(jointPositionInput[1].last());
 
+  delay(1);
+  if (millis() - lastdirection_1 > 20)
+  {
+    lastdirection_1 = millis();
+    n++;
+
+    //controlMotorDriver(1, 2000 * sin(6.28 * 1 / 10 * 0.02 * n));
+    //robot.robotJoints[2].drive(2500 * sin(6.28 * 2 / 1* 0.02 * n));
+    //controlMotorDriver(1,2000 * sin(6.28 * 1 / 5 * 0.02 * n));
+
+    //Serial.println(1900 * sin(6.28 * 1 / 1 * 0.02 * n));
+    if (n > 500)
+    {
+      n = 0;
+    }
+  }
 }
-

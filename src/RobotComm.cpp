@@ -7,35 +7,57 @@ RobotComm::RobotComm(Manipulator *robot)
 {
   this->robot = robot;
 }
-String *RobotComm::decomposeMsg(String input)
+robotMsg RobotComm::decomposeMsg(String input)
 {
-  int length = input.length();
   int pos = 0;
   int pos_next = 0;
   int element = 0;
   bool end = false;
-#define MAX_ELEMENTS 20
-  String output[MAX_ELEMENTS];
+
+  robotMsg r_msg;
+
+  int posValue = input.indexOf(':');
+  String types = input.substring(0, posValue);
+  String values = input.substring(posValue + 1);
+
+  r_msg.top_type = types.charAt(0);
+  if (types.length() > 2)
+  {
+    r_msg.medium_type = types.charAt(2);
+
+    if (types.length() > 3)
+    {
+      r_msg.low_type = types.charAt(4);
+    }
+  }
+
   do
   {
-    pos_next = input.indexOf(',', pos + 1);
-    output[element] = input.substring(pos, pos_next);
+    pos_next = values.indexOf(',', pos + 1);
+    if (pos_next < 0)
+    {
+      r_msg.values[element] = values.substring(pos).toFloat();
+    }
+    else
+    {
+      r_msg.values[element] = values.substring(pos, pos_next).toFloat();
+    }
     element++;
-    pos = pos_next;
+    pos = pos_next + 1;
 
-    if (pos >= input.length() || pos_next == -1)
+    if (pos >= values.length() || pos_next == -1)
     {
       end = true;
     }
 
-  } while (input.charAt(pos + 1) != ';' || element < MAX_ELEMENTS || !end);
+  } while (!end);
 
-  return output;
+  return r_msg;
 }
 
-void RobotComm::parseStringCommand(String *msg)
+void RobotComm::parseRobotCommand(robotMsg msg)
 {
-  char msg_type = msg[0].charAt(0);
+  char msg_type = msg.top_type;
 
   switch (msg_type)
   {
@@ -60,10 +82,10 @@ void RobotComm::parseStringCommand(String *msg)
   }
 }
 
-void RobotComm::processActuationCommand(String command[3])
+void RobotComm::processActuationCommand(robotMsg command)
 {
-  int joint_id = command[1].toInt();
-  int16_t motorCommand = command[2].toInt();
+  int joint_id = (int)round(command.values[0]);
+  int16_t motorCommand = (int16_t)round(command.values[1]);
   robot->robotJoints[joint_id].drive(motorCommand);
 
 #ifdef COMMUNICATION_DEBUG
@@ -74,20 +96,20 @@ void RobotComm::processActuationCommand(String command[3])
 #endif
 }
 
-void RobotComm::processOffsetCommand(String command[4])
+void RobotComm::processOffsetCommand(robotMsg command)
 {
-  char type = command[1].charAt(0);
-  int joint_id = command[2].toInt();
+  char type = command.medium_type;
+  int joint_id = (int)round(command.values[0]);
   switch (type)
   {
   case 'p':
-    float angle_offset = command[3].toFloat();
+    float angle_offset = command.values[1];
     robot->robotJoints[joint_id].setAngleOffsetRad(angle_offset);
     robot->angle_offsets[joint_id] = angle_offset;
     robot->saveOffsetData();
     break;
   case 't':
-    float torqueOffset = command[3].toFloat();
+    float torqueOffset = command.values[1];
     robot->robotJoints[joint_id].setTorqueOffsetNm(torqueOffset);
     robot->torqueOffsets[joint_id] = torqueOffset;
     robot->saveOffsetData();
@@ -102,11 +124,11 @@ void RobotComm::processOffsetCommand(String command[4])
 #endif
 }
 
-void RobotComm::processLimitCommand(String command[4])
+void RobotComm::processLimitCommand(robotMsg command)
 {
-  int joint_id = command[1].toInt();
-  float limit_r = command[2].toFloat();
-  float limit_l = command[3].toFloat();
+  int joint_id = (int)round(command.values[0]);
+  float limit_r = command.values[0];
+  float limit_l = command.values[1];
   robot->robotJoints[joint_id].setPosLimits(limit_r, limit_l);
   robot->saveLimitData();
 #ifdef COMMUNICATION_DEBUG
@@ -119,14 +141,14 @@ void RobotComm::processLimitCommand(String command[4])
 #endif
 }
 
-void RobotComm::processPIDTuneCommand(String command[6])
+void RobotComm::processPIDTuneCommand(robotMsg command)
 {
-  char type = command[1].charAt(0);
-  int joint_id = command[2].toInt();
+  char type = command.medium_type;
+  int joint_id = (int)round(command.values[0]);
 
-  float kp = command[3].toFloat();
-  float ki = command[4].toFloat();
-  float kd = command[5].toFloat();
+  float kp = command.values[1];
+  float ki = command.values[2];
+  float kd = command.values[3];
 
   switch (type)
   {
@@ -148,12 +170,12 @@ void RobotComm::processPIDTuneCommand(String command[6])
   }
 }
 
-void RobotComm::processTargetCommand(String command[5])
+void RobotComm::processTargetCommand(robotMsg command)
 {
-  int joint_id = command[1].toInt();
-  float position_target = command[2].toFloat();
-  float velocity_target = command[3].toFloat();
-  float acceleration_target = command[4].toFloat();
+  int joint_id = (int)round(command.values[0]);
+  float position_target = command.values[1];
+  float velocity_target = command.values[2];
+  float acceleration_target = command.values[3];
 
   robot->robotJoints[joint_id].posiion_target = position_target;
   robot->robotJoints[joint_id].velocity_target = velocity_target;
@@ -161,10 +183,11 @@ void RobotComm::processTargetCommand(String command[5])
       acceleration_target;
 }
 
-void RobotComm::processActivateOutputCommand(String command[7])
+void RobotComm::processActivateOutputCommand(robotMsg command)
 {
-  output_joint_id = command[1].toInt();
-  mode = (outputMode)command[2].toInt();
+  Serial.println("processing output command");
+  output_joint_id = (int)round(command.values[0]);
+  mode = (outputMode)round(command.values[1]);
 
   printLegend();
 }
@@ -174,8 +197,18 @@ void RobotComm::readInputCommands()
   if (micros() - last_input > serialInputPeriod)
   {
     last_input = micros();
-    String msg = Serial.readStringUntil(';');
-    parseStringCommand(decomposeMsg(msg));
+    {
+      if (Serial.available())
+      {
+        Serial.print("read input: ");
+        String msg = Serial.readStringUntil('\n');
+        Serial.println(msg);
+        if (msg.endsWith(';'))
+        {
+          parseRobotCommand(decomposeMsg(msg));
+        }
+      }
+    }
   }
 }
 

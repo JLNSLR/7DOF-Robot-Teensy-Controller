@@ -1,23 +1,30 @@
 #include <Math/differentiator.h>
+#include <Arduino.h>
 
 Differentiator::Differentiator()
 {
     buffer.unshift(0);
     buffer.unshift(0);
     buffer.unshift(0);
+
+    for (int i = 0; i < smoother_length; i++)
+    {
+        smoother.unshift(0);
+    }
 };
 Differentiator::Differentiator(float timestep)
 {
     Differentiator();
+    this->timestep = timestep;
     timestep_micro = timestep * 1000 * 1000;
 }
 Differentiator::Differentiator(int frequency)
 {
-    timestep = 1 / frequency;
+    timestep = double(1 / frequency);
     setTimeStep(timestep);
 }
 
-void Differentiator::setTimeStep(float timestep)
+void Differentiator::setTimeStep(double timestep)
 {
     timestep_micro = timestep * 1000 * 1000;
     this->timestep = timestep;
@@ -29,7 +36,7 @@ void Differentiator::setTimeStep(int timestep)
 }
 void Differentiator::setFrequency(int frequency)
 {
-    timestep = 1 / frequency;
+    timestep = double(1 / (double)frequency);
     setTimeStep(timestep);
 }
 
@@ -40,10 +47,19 @@ void Differentiator::setInput(float input)
 
 void Differentiator::differentiate()
 {
-    int32_t y_timeStepPlus = buffer.first();
-    int32_t y_timeStepMinus = buffer.pop();
+    float y_timeStepPlus = buffer.first();
+    float y_timeStepMinus = buffer.pop();
 
-    output = (y_timeStepPlus - y_timeStepMinus) / timestep * 2;
+    float intermediate = 0;
+
+    output = (double)((y_timeStepPlus - y_timeStepMinus) / (timestep * 2));
+
+    smoother.unshift(output);
+    for (int i = 0; i < smoother_length; i++)
+    {
+        intermediate += smoother[i];
+    }
+    output = intermediate / smoother_length;
 }
 
 float Differentiator::getOutput()

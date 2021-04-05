@@ -20,28 +20,58 @@ void Manipulator::initManipulator()
   robotJoints[0].currentSensorId = 0;
 
   robotJoints[1].joint_id = 1;
-  robotJoints[1].motorControllerId = 1;
-  robotJoints[1].currentSensorId = 1;
+  robotJoints[1].motorControllerId = 2;
+  robotJoints[1].currentSensorId = 2;
+
+  float standard_offset_J1 = -150.9;
+  robotJoints[1].setAngleOffsetDeg(standard_offset_J1);
+  robotJoints[1].setPosLimits(90, -90);
 
   robotJoints[2].joint_id = 2;
-  robotJoints[2].motorControllerId = 2;
-  robotJoints[2].currentSensorId = 2;
+  robotJoints[2].motorControllerId = 1;
+  robotJoints[2].currentSensorId = 1;
+
+  float standard_offset_J2 = -33.5;
+  robotJoints[2].setAngleOffsetDeg(standard_offset_J2);
+  robotJoints[2].setPosLimits(0, 0);
 
   robotJoints[3].joint_id = 3;
   robotJoints[3].motorControllerId = 3;
   robotJoints[3].currentSensorId = 3;
 
+  float standard_offset_J3 = -39.55;
+  robotJoints[3].setAngleOffsetDeg(standard_offset_J3);
+  robotJoints[3].setPosLimits(90, -90);
+
   robotJoints[4].joint_id = 4;
   robotJoints[4].motorControllerId = 4;
   robotJoints[4].currentSensorId = 4;
+
+  float standard_offset_J4 =0;
+  robotJoints[4].setAngleOffsetDeg(standard_offset_J4);
+  robotJoints[4].setPosLimits( 90, - 90);
 
   robotJoints[5].joint_id = 5;
   robotJoints[5].motorControllerId = 5;
   robotJoints[5].currentSensorId = 5;
 
+  float standard_offset_J5 = -104.6;
+  robotJoints[5].setAngleOffsetDeg(standard_offset_J5);
+  robotJoints[5].setPosLimits( 90,  -90);
+
   robotJoints[6].joint_id = 6;
   robotJoints[6].motorControllerId = 6;
   robotJoints[6].currentSensorId = 6;
+
+
+  float standard_offset_J6 = 0;
+  robotJoints[6].setAngleOffsetDeg(standard_offset_J6);
+  robotJoints[3].setPosLimits(180,  -180);
+
+  for (int i = 0; i < numberOfJoints; i++)
+  {
+    robotJoints[i].initRobotJoint();
+  }
 
   // --- Read Initializaton Data from Memory
   readOffsetDataFromMemory();
