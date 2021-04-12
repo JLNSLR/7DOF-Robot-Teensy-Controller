@@ -16,6 +16,7 @@ int lastCount = 0;
 
 int lastdirection_1 = 0;
 int lastdirection_2 = 0;
+int lastCurrent = 0;
 bool direction = true;
 int n = 0;
 
@@ -62,6 +63,7 @@ void setup()
 
 void loop()
 {
+  analogWrite(PWM_FAN_1, 3000);
   canBus.events(); //Push received interrupt frames from queue to callback
   robot.processJointSensors();
   communication.periodicSerialOutput();
@@ -73,7 +75,6 @@ void loop()
   //Serial.println(robot.robotJoints[2].getCurrent());
   //Serial.println(jointPositionInput[1].last());
 
-  delay(1);
   if (millis() - lastdirection_1 > 20)
   {
     lastdirection_1 = millis();
@@ -89,4 +90,5 @@ void loop()
       n = 0;
     }
   }
+  delayMicroseconds(100);
 }

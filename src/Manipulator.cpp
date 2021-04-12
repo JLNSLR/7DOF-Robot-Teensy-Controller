@@ -20,12 +20,11 @@ void Manipulator::initManipulator()
   robotJoints[0].currentSensorId = 0;
 
   robotJoints[1].joint_id = 1;
-  robotJoints[1].motorControllerId = 2;
+  robotJoints[1].motorControllerId = 3;
   robotJoints[1].currentSensorId = 2;
 
   float standard_offset_J1 = -150.9;
   robotJoints[1].setAngleOffsetDeg(standard_offset_J1);
-  robotJoints[1].setPosLimits(90, -90);
 
   robotJoints[2].joint_id = 2;
   robotJoints[2].motorControllerId = 1;
@@ -34,6 +33,7 @@ void Manipulator::initManipulator()
   float standard_offset_J2 = -33.5;
   robotJoints[2].setAngleOffsetDeg(standard_offset_J2);
   robotJoints[2].setPosLimits(0, 0);
+  robotJoints[2].setMotorCommandDirection(-1);
 
   robotJoints[3].joint_id = 3;
   robotJoints[3].motorControllerId = 3;
@@ -41,32 +41,30 @@ void Manipulator::initManipulator()
 
   float standard_offset_J3 = -39.55;
   robotJoints[3].setAngleOffsetDeg(standard_offset_J3);
-  robotJoints[3].setPosLimits(90, -90);
 
   robotJoints[4].joint_id = 4;
-  robotJoints[4].motorControllerId = 4;
+  robotJoints[4].motorControllerId = 5;
   robotJoints[4].currentSensorId = 4;
 
-  float standard_offset_J4 =0;
+  float standard_offset_J4 = 0;
   robotJoints[4].setAngleOffsetDeg(standard_offset_J4);
-  robotJoints[4].setPosLimits( 90, - 90);
+  //robotJoints[4].setPosLimits(0, 0);
 
   robotJoints[5].joint_id = 5;
-  robotJoints[5].motorControllerId = 5;
+  robotJoints[5].motorControllerId = 4;
   robotJoints[5].currentSensorId = 5;
 
   float standard_offset_J5 = -104.6;
   robotJoints[5].setAngleOffsetDeg(standard_offset_J5);
-  robotJoints[5].setPosLimits( 90,  -90);
+
 
   robotJoints[6].joint_id = 6;
   robotJoints[6].motorControllerId = 6;
   robotJoints[6].currentSensorId = 6;
 
-
   float standard_offset_J6 = 0;
   robotJoints[6].setAngleOffsetDeg(standard_offset_J6);
-  robotJoints[3].setPosLimits(180,  -180);
+
 
   for (int i = 0; i < numberOfJoints; i++)
   {
@@ -115,25 +113,25 @@ void Manipulator::readGainDataFromMemory()
   {
     for (int i = 0; i < 7; i++)
     {
-      robotJoints[i].positionController.kp =
+      robotJoints[i].positionPID.kp =
           gains.positionGains[i].Kp;
-      robotJoints[i].positionController.ki =
+      robotJoints[i].positionPID.ki =
           gains.positionGains[i].Ki;
-      robotJoints[i].positionController.kd =
+      robotJoints[i].positionPID.kd =
           gains.positionGains[i].Kd;
 
-      robotJoints[i].velocityController.kp =
+      robotJoints[i].velocityPID.kp =
           gains.velocityGains[i].Kp;
-      robotJoints[i].velocityController.ki =
+      robotJoints[i].velocityPID.ki =
           gains.velocityGains[i].Ki;
-      robotJoints[i].velocityController.kd =
+      robotJoints[i].velocityPID.kd =
           gains.velocityGains[i].Kd;
 
-      robotJoints[i].currentController.kp =
+      robotJoints[i].currentPID.kp =
           gains.currentGains[i].Kp;
-      robotJoints[i].velocityController.ki =
+      robotJoints[i].velocityPID.ki =
           gains.velocityGains[i].Ki;
-      robotJoints[i].velocityController.kd =
+      robotJoints[i].velocityPID.kd =
           gains.velocityGains[i].Kd;
     }
   }
@@ -185,25 +183,25 @@ void Manipulator::saveGainData()
   for (int i = 0; i < 7; i++)
   {
     gainMemory.positionGains[i].Kp =
-        robotJoints[i].positionController.kp;
+        robotJoints[i].positionPID.kp;
     gainMemory.positionGains[i].Ki =
-        robotJoints[i].positionController.ki;
+        robotJoints[i].positionPID.ki;
     gainMemory.positionGains[i].Kd =
-        robotJoints[i].positionController.kd;
+        robotJoints[i].positionPID.kd;
 
     gainMemory.velocityGains[i].Kp =
-        robotJoints[i].velocityController.kp;
+        robotJoints[i].velocityPID.kp;
     gainMemory.velocityGains[i].Ki =
-        robotJoints[i].velocityController.ki;
+        robotJoints[i].velocityPID.ki;
     gainMemory.velocityGains[i].Kd =
-        robotJoints[i].velocityController.kd;
+        robotJoints[i].velocityPID.kd;
 
     gainMemory.currentGains[i].Kp =
-        robotJoints[i].currentController.kp;
+        robotJoints[i].currentPID.kp;
     gainMemory.currentGains[i].Ki =
-        robotJoints[i].currentController.ki;
+        robotJoints[i].currentPID.ki;
     gainMemory.currentGains[i].Kd =
-        robotJoints[i].currentController.kd;
+        robotJoints[i].currentPID.kd;
   }
 
   EEPROM.put(controllerGain_address, gainMemory);

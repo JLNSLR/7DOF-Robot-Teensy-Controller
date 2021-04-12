@@ -160,7 +160,7 @@ int16_t readCurrentSensor(int sensorId)
     return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
     break;
   case 2:
-    return processCurrentSensor(I30A, currentSensorPins[sensorId], sensorId);
+    return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
     break;
   case 3:
     return processCurrentSensor(I30A, currentSensorPins[sensorId], sensorId);
@@ -209,7 +209,7 @@ void calibrateOffsetCurrentSensor()
   int n_readings = 500;
   int delay_between_readings = 1; //ms
 
-  Serial.println("Calibrating Current Sensors.");
+  Serial.println("#Calibrating Current Sensors.");
 
   for (int i = 0; i < 7; i++)
   {
@@ -223,5 +223,5 @@ void calibrateOffsetCurrentSensor()
     currentSensorOffsets[i] = zerocurrent_val;
   }
 
-  Serial.println("Successfully calibrated Current Sensors");
+  Serial.println("#Successfully calibrated Current Sensors");
 }

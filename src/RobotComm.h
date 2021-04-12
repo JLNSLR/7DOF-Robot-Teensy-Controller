@@ -68,12 +68,14 @@ public:
 
   Manipulator *robot;
 
-  int serialOutputPeriod = 3333;
+  int serialOutputPeriod = 20000;
   int serialInputPeriod = 3333;
 
   void periodicSerialOutput();
 
   void readInputCommands();
+
+  void writeStatusMsg(String msg);
 
 private:
   robotMsg decomposeMsg(String msg);
@@ -109,7 +111,7 @@ private:
 
   void printLegend();
 
-  int output_joint_id = 4;
+  int output_joint_id = 0;
   enum outputMode
   {
     position,

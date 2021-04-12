@@ -22,6 +22,11 @@
 #define POS_FREQ 300
 #define TORQUE_FREQ 300
 
+#define CURRENT_MOV_AVERAGE 10
+
+#define POSITIVE_DIRECTION 1
+#define NEGATIVE_DIRECTION 2
+
 class RobotJoint
 {
 public:
@@ -49,15 +54,21 @@ public:
   CircularBuffer<float, 5> torque;
   CircularBuffer<float, 5> current;
 
-  PIDController positionController;
-  PIDController velocityController;
-  PIDController currentController;
+  PIDController positionPID;
+  PIDController velocityPID;
+  PIDController currentPID;
 
-  int16_t motorCommand;
-  float velocity_target;
-  float posiion_target;
-  float current_target;
-  float acceleration_target;
+  int16_t motorCommand = 0;
+  float position_target = 0;
+  float acceleration_target = 0;
+
+  int16_t motorVoltage_feedforward = 0;
+  float current_feedforward = 0;
+  float velocity_feedforward = 0;
+
+  void processCurrentController();
+  void processVelocityController();
+  void processPositionController();
 
   float torque_target;
 
@@ -72,7 +83,6 @@ public:
 
   IIRFilter<CURRENT_FILTER_ORDER> currentFilter;
   IIRFilter<POSITION_FILTER_ORDER> positionFilter;
-
   IIRFilter<TORQUE_FILTER_ORDER> torqueFilter;
 
   void drive(int16_t motorCommand);
@@ -86,6 +96,8 @@ public:
   void setAngleOffsetRad(float angle_offset);
   void setAngleOffsetDeg(float angle_offset);
   void setTorqueOffsetNm(float torqueOffset);
+
+  void setAccelerationtarget(float acceleration_target);
 
   float getAngleRad();
   float getVelocityRad();
@@ -102,10 +114,29 @@ public:
   float getLimitR();
   float getLimitL();
 
+  void setAngleDirection(int ange_direction);
+
+  void setMotorCommandDirection(int motor_direction);
+
+  float getAngleOffset();
+  float getTorqueOffset();
+
+  int currentCounter = 0;
+
+  float acc2CurrentFactor = 100;
+
 private:
   int lastTimePositionInput = 0;
   int lastTimeTorqueInput = 0;
   int lastTimeCurrentInput = 0;
+
+  int lastTimeCurrentController = 0;
+  int lastTimeVelocityController = 0;
+  int lastTimePositionController = 0;
+
+  int currentControllerSampleTime = 1000;
+  int velocityControllerSampleTime = 3333;
+  int positionControllerSampleTime = 6666;
 
   float torqueFactor = 0.01;
 
@@ -122,12 +153,15 @@ private:
   float convertPositionInput(int16_t rawPosition);
   float convertTorqueInput(int32_t rawTorque);
 
+  int angle_direction = 1;
+  int command_direction = 1;
+
   Differentiator firstDerivative;
   Differentiator secondDerivative;
 
-  CircularBuffer<float, 10> currentAverage;
+  CircularBuffer<float, CURRENT_MOV_AVERAGE> currentAverage;
 
-  bool hitJointLimit();
+  int hitJointLimit();
 };
 
 #endif // ROBOTJOINT_H

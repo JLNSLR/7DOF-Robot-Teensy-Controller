@@ -15,6 +15,39 @@ void PIDController::compute()
 {
 
     if (!inAuto)
+    {
+        return;
+    }
+
+    /* Compute error variables */
+    float error = setpoint - input;
+    iTerm += ki * error;
+
+    //Clamp iTerm against windup
+    if (iTerm > outMax)
+        iTerm = outMax;
+    else if (iTerm < outMin)
+        iTerm = outMin;
+
+    float dInput = input - lastInput;
+
+    /* Compute PID Output */
+
+    output = kp * error + iTerm - kd * dInput;
+
+    //Clamp output against windup
+    if (output > outMax)
+        output = outMax;
+    else if (output < outMin)
+        output = outMin;
+
+    /* Save Variables for next step */
+    lastInput = input;
+};
+
+void PIDController::computePeriodic()
+{
+    if (!inAuto)
         return;
     unsigned long now = micros();
 
@@ -25,7 +58,7 @@ void PIDController::compute()
 
         /* Compute error variables */
         float error = setpoint - input;
-        iTerm += ki*error;
+        iTerm += ki * error;
 
         //Clamp iTerm against windup
         if (iTerm > outMax)
@@ -49,7 +82,7 @@ void PIDController::compute()
         lastInput = input;
         lastTime = now;
     }
-};
+}
 
 void PIDController::setTuning(float kp, float ki, float kd)
 {
@@ -71,7 +104,7 @@ void PIDController::setTuning(float kp, float ki, float kd)
     }
 }
 
-void PIDController::setSampleTime(float newSampleTime)
+void PIDController::setSampleTime(int newSampleTime)
 {
 
     if (newSampleTime > 0)

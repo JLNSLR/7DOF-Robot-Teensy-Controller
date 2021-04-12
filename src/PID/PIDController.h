@@ -19,9 +19,10 @@ public:
     PIDController(float kp, float ki, float kd);
 
     void compute();
+    void computePeriodic();
     void setTuning(float kp, float ki, float kd);
 
-    void setSampleTime(float newSampleTime);
+    void setSampleTime(int newSampleTime);
 
     void setOutputLimits(float min, float max);
 

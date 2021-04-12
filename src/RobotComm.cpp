@@ -89,7 +89,7 @@ void RobotComm::processActuationCommand(robotMsg command)
   robot->robotJoints[joint_id].drive(motorCommand);
 
 #ifdef COMMUNICATION_DEBUG
-  Serial.print("Received Actuation command: ");
+  Serial.print("#Received Actuation command: ");
   Serial.print(joint_id);
   Serial.print(",");
   Serial.println(motorCommand);
@@ -104,20 +104,23 @@ void RobotComm::processOffsetCommand(robotMsg command)
   {
   case 'p':
     float angle_offset = command.values[1];
-    robot->robotJoints[joint_id].setAngleOffsetRad(angle_offset);
+    float previousAngleOffset = robot->robotJoints[joint_id].getAngleOffset();
+    robot->robotJoints[joint_id]
+        .setAngleOffsetDeg(angle_offset + previousAngleOffset);
     robot->angle_offsets[joint_id] = angle_offset;
     robot->saveOffsetData();
     break;
   case 't':
     float torqueOffset = command.values[1];
-    robot->robotJoints[joint_id].setTorqueOffsetNm(torqueOffset);
+    float previousTorqueOffset = robot->robotJoints[joint_id].getTorqueOffset();
+    robot->robotJoints[joint_id].setTorqueOffsetNm(torqueOffset + previousTorqueOffset);
     robot->torqueOffsets[joint_id] = torqueOffset;
     robot->saveOffsetData();
     break;
   }
 
 #ifdef COMMUNICATION_DEBUG
-  Serial.print("Received Offset command: ");
+  Serial.print("#Received Offset command: ");
   Serial.print(joint_id);
   Serial.print(",");
   Serial.println(type);
@@ -132,7 +135,7 @@ void RobotComm::processLimitCommand(robotMsg command)
   robot->robotJoints[joint_id].setPosLimits(limit_r, limit_l);
   robot->saveLimitData();
 #ifdef COMMUNICATION_DEBUG
-  Serial.print("Received Limit command: ");
+  Serial.print("#Received Limit command: ");
   Serial.print(joint_id);
   Serial.print(",");
   Serial.print(limit_r);
@@ -153,19 +156,19 @@ void RobotComm::processPIDTuneCommand(robotMsg command)
   switch (type)
   {
   case 'p':
-    robot->robotJoints[joint_id].positionController.kp = kp;
-    robot->robotJoints[joint_id].positionController.ki = ki;
-    robot->robotJoints[joint_id].positionController.kd = kd;
+    robot->robotJoints[joint_id].positionPID.kp = kp;
+    robot->robotJoints[joint_id].positionPID.ki = ki;
+    robot->robotJoints[joint_id].positionPID.kd = kd;
     break;
   case 'v':
-    robot->robotJoints[joint_id].velocityController.kp = kp;
-    robot->robotJoints[joint_id].velocityController.ki = ki;
-    robot->robotJoints[joint_id].velocityController.kd = kd;
+    robot->robotJoints[joint_id].velocityPID.kp = kp;
+    robot->robotJoints[joint_id].velocityPID.ki = ki;
+    robot->robotJoints[joint_id].velocityPID.kd = kd;
     break;
   case 'i':
-    robot->robotJoints[joint_id].currentController.kp = kp;
-    robot->robotJoints[joint_id].currentController.ki = ki;
-    robot->robotJoints[joint_id].currentController.kd = kd;
+    robot->robotJoints[joint_id].currentPID.kp = kp;
+    robot->robotJoints[joint_id].currentPID.ki = ki;
+    robot->robotJoints[joint_id].currentPID.kd = kd;
     break;
   }
 }
@@ -177,17 +180,20 @@ void RobotComm::processTargetCommand(robotMsg command)
   float velocity_target = command.values[2];
   float acceleration_target = command.values[3];
 
-  robot->robotJoints[joint_id].posiion_target = position_target;
-  robot->robotJoints[joint_id].velocity_target = velocity_target;
+  robot->robotJoints[joint_id].position_target = position_target;
+  robot->robotJoints[joint_id].velocityPID.setpoint = velocity_target;
   robot->robotJoints[joint_id].acceleration_target =
       acceleration_target;
 }
 
 void RobotComm::processActivateOutputCommand(robotMsg command)
 {
-  Serial.println("processing output command");
+  Serial.println("#processing output command");
   output_joint_id = (int)round(command.values[0]);
-  mode = (outputMode)round(command.values[1]);
+  mode = outputMode((int)round(command.values[1]));
+
+  Serial.print("#Outputmode: ");
+  Serial.println(mode);
 
   printLegend();
 }
@@ -200,11 +206,10 @@ void RobotComm::readInputCommands()
     {
       if (Serial.available())
       {
-        Serial.print("read input: ");
         String msg = Serial.readStringUntil('\n');
-        Serial.println(msg);
         if (msg.endsWith(';'))
         {
+          writeStatusMsg(msg);
           parseRobotCommand(decomposeMsg(msg));
         }
       }
@@ -252,16 +257,16 @@ void RobotComm::periodicSerialOutput()
 
 void RobotComm::printSerialPosition(int joint_id)
 {
-  Serial.println(robot->robotJoints[output_joint_id].getAngleRad());
+  Serial.println(robot->robotJoints[output_joint_id].getAngleDeg());
 }
 
 void RobotComm::printSerialTrajectory(int joint_id)
 {
-  Serial.print(robot->robotJoints[output_joint_id].getAngleRad());
+  Serial.print(robot->robotJoints[output_joint_id].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[output_joint_id].getVelocityRad());
+  Serial.print(robot->robotJoints[output_joint_id].getVelocityDeg());
   Serial.print(',');
-  Serial.println(robot->robotJoints[output_joint_id].getAccelerationRad());
+  Serial.println(robot->robotJoints[output_joint_id].getAccelerationDeg());
 }
 
 void RobotComm::printSerialTorque(int joint_id)
@@ -276,163 +281,127 @@ void RobotComm::printSerialCurrent(int joint_id)
 
 void RobotComm::printSerialJointData(int joint_id)
 {
-  Serial.print(robot->robotJoints[output_joint_id].getAngleRad());
+
+  Serial.print(robot->robotJoints[joint_id].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[output_joint_id].getVelocityRad());
+  Serial.print(robot->robotJoints[joint_id].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[output_joint_id].getAccelerationRad());
+  Serial.print(robot->robotJoints[joint_id].getAccelerationDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[output_joint_id].getTorque());
+  Serial.print(robot->robotJoints[joint_id].getTorque());
   Serial.print(',');
-  Serial.println(robot->robotJoints[output_joint_id].getCurrent());
+  Serial.println(robot->robotJoints[joint_id].getCurrent());
+  Serial.print(',');
+  Serial.println(robot->robotJoints[joint_id].motorCommand);
 }
 
 void RobotComm::printSerialAllPositionData()
 {
-  Serial.print(robot->robotJoints[0].getAngleRad());
+  Serial.print(robot->robotJoints[0].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[1].getAngleRad());
+  Serial.print(robot->robotJoints[1].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[2].getAngleRad());
+  Serial.print(robot->robotJoints[2].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[3].getAngleRad());
+  Serial.print(robot->robotJoints[3].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[4].getAngleRad());
+  Serial.print(robot->robotJoints[4].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[5].getAngleRad());
+  Serial.print(robot->robotJoints[5].getAngleDeg());
   Serial.print(',');
-  Serial.println(robot->robotJoints[6].getAngleRad());
+  Serial.println(robot->robotJoints[6].getAngleDeg());
 }
 
 void RobotComm::printSerialAllTrajectories()
 {
   //Position Data
-  Serial.print(robot->robotJoints[0].getAngleRad());
+  Serial.print(robot->robotJoints[0].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[1].getAngleRad());
+  Serial.print(robot->robotJoints[1].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[2].getAngleRad());
+  Serial.print(robot->robotJoints[2].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[3].getAngleRad());
+  Serial.print(robot->robotJoints[3].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[4].getAngleRad());
+  Serial.print(robot->robotJoints[4].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[5].getAngleRad());
+  Serial.print(robot->robotJoints[5].getAngleDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[6].getAngleRad());
+  Serial.print(robot->robotJoints[6].getAngleDeg());
 
   Serial.print(',');
   //Velocity Data
-  Serial.print(robot->robotJoints[0].getVelocityRad());
+  Serial.print(robot->robotJoints[0].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[1].getVelocityRad());
+  Serial.print(robot->robotJoints[1].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[2].getVelocityRad());
+  Serial.print(robot->robotJoints[2].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[3].getVelocityRad());
+  Serial.print(robot->robotJoints[3].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[4].getVelocityRad());
+  Serial.print(robot->robotJoints[4].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[5].getVelocityRad());
+  Serial.print(robot->robotJoints[5].getVelocityDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[6].getVelocityRad());
+  Serial.print(robot->robotJoints[6].getVelocityDeg());
 
   Serial.print(',');
   //Acceleration Data
-  Serial.print(robot->robotJoints[0].getAccelerationRad());
+  Serial.print(robot->robotJoints[0].getAccelerationDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[1].getAccelerationRad());
+  Serial.print(robot->robotJoints[1].getAccelerationDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[2].getAccelerationRad());
+  Serial.print(robot->robotJoints[2].getAccelerationDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[3].getAccelerationRad());
+  Serial.print(robot->robotJoints[3].getAccelerationDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[4].getAccelerationRad());
+  Serial.print(robot->robotJoints[4].getAccelerationDeg());
   Serial.print(',');
-  Serial.print(robot->robotJoints[5].getAccelerationRad());
+  Serial.print(robot->robotJoints[5].getAccelerationDeg());
   Serial.print(',');
-  Serial.println(robot->robotJoints[6].getAccelerationRad());
+  Serial.println(robot->robotJoints[6].getAccelerationDeg());
 }
 
 void RobotComm::printSerialAllData()
 {
-  Serial.print(robot->robotJoints[0].getAngleRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[1].getAngleRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[2].getAngleRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[3].getAngleRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[4].getAngleRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[5].getAngleRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[6].getAngleRad());
-
-  Serial.print(',');
+  //Angle Data
+  for (int i = 0; i < robot->numberOfJoints; i++)
+  {
+    Serial.print(robot->robotJoints[i].getAngleDeg());
+    Serial.print(',');
+  }
   //Velocity Data
-  Serial.print(robot->robotJoints[0].getVelocityRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[1].getVelocityRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[2].getVelocityRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[3].getVelocityRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[4].getVelocityRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[5].getVelocityRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[6].getVelocityRad());
-
-  Serial.print(',');
+  for (int i = 0; i < robot->numberOfJoints; i++)
+  {
+    Serial.print(robot->robotJoints[i].getVelocityDeg());
+    Serial.print(',');
+  }
   //Acceleration Data
-  Serial.print(robot->robotJoints[0].getAccelerationRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[1].getAccelerationRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[2].getAccelerationRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[3].getAccelerationRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[4].getAccelerationRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[5].getAccelerationRad());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[6].getAccelerationRad());
+  for (int i = 0; i < robot->numberOfJoints; i++)
+  {
+    Serial.print(robot->robotJoints[i].getAccelerationDeg());
+    Serial.print(',');
+  }
 
-  Serial.print(',');
   //Torque Data
-  Serial.print(robot->robotJoints[0].getTorque());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[1].getTorque());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[2].getTorque());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[3].getTorque());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[4].getTorque());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[5].getTorque());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[6].getTorque());
+  for (int i = 0; i < robot->numberOfJoints; i++)
+  {
+    Serial.print(robot->robotJoints[i].getTorque());
+    Serial.print(',');
+  }
 
-  Serial.print(',');
-  //Curren Data
-  Serial.print(robot->robotJoints[0].getCurrent());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[1].getCurrent());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[2].getCurrent());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[3].getCurrent());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[4].getCurrent());
-  Serial.print(',');
-  Serial.print(robot->robotJoints[5].getCurrent());
-  Serial.print(',');
-  Serial.println(robot->robotJoints[6].getCurrent());
+  //Current Data
+  for (int i = 0; i < robot->numberOfJoints; i++)
+  {
+    Serial.print(robot->robotJoints[i].getCurrent());
+    Serial.print(',');
+  }
+  for (int i = 0; i < robot->numberOfJoints - 1; i++)
+  {
+    Serial.print(robot->robotJoints[i].motorCommand);
+    Serial.print(',');
+  }
+  Serial.println(robot->robotJoints[6].motorCommand);
 }
 
 void RobotComm::printLegend()
@@ -478,4 +447,10 @@ void RobotComm::printLegend()
   default:
     break;
   }
+}
+
+void RobotComm::writeStatusMsg(String msg)
+{
+  String message = "#";
+  Serial.println(message + msg);
 }
