@@ -55,7 +55,7 @@ void RobotJoint::processPositionInput()
   if (micros() - lastTimePositionInput > positionInputPeriod)
   {
     lastTimePositionInput = micros();
-    positionFilter.input = convertPositionInput(jointPositionInput[joint_id].shift());
+    positionFilter.input = convertPositionInput(jointPositionInput[joint_id].pop());
     positionFilter.compute();
     position.unshift(positionFilter.output);
     //Serial.println(positionFilter.output);
@@ -87,14 +87,6 @@ void RobotJoint::processCurrentInput()
     currentFilter.compute();
     current.unshift(currentFilter.output);
 
-    /*
-    float averageValue = 0;
-    for (int i = 0; i < CURRENT_MOV_AVERAGE; i++)
-    {
-      averageValue += currentAverage[i];
-    }
-    current.unshift(averageValue / CURRENT_MOV_AVERAGE);
-    */
     currentCounter++;
   }
 }
@@ -103,7 +95,7 @@ void RobotJoint::processTorqueInput()
   if (micros() - lastTimeTorqueInput > currentInputPeriod)
   {
     lastTimeTorqueInput = micros();
-    torqueFilter.input = (jointTorqueInput[joint_id].shift());
+    torqueFilter.input = (jointTorqueInput[joint_id].pop());
     torqueFilter.compute();
     torque.unshift(torqueFilter.output);
   }
@@ -121,7 +113,9 @@ void RobotJoint::drive(int16_t motorCommand)
       return;
     }
   }
-  controlMotorDriver(motorControllerId, motorCommand * command_direction);
+  motorCommand = motorCommand * command_direction;
+
+  controlMotorDriver(motorControllerId, motorCommand);
 }
 
 void RobotJoint::processCurrentController()
@@ -155,15 +149,28 @@ void RobotJoint::processPositionController()
     positionPID.setpoint = position_target;
     positionPID.input = position.last();
     positionPID.compute();
+    if (baseLineController)
+    {
+      motorCommand = (int16_t)round(positionPID.output) + motorVoltage_feedforward;
+      drive(motorCommand);
+      return;
+    }
     velocityPID.setpoint = positionPID.output + velocity_feedforward;
   }
+}
+
+void RobotJoint::processCascadeController()
+{
+  processPositionController();
+  processVelocityController();
+  processCurrentController();
 }
 
 void RobotJoint::setPosLimits(float limit_right, float limit_left)
 {
   posLimit = true;
-  this->limit_left = limit_left;
-  this->limit_right = limit_right;
+  this->limit_neg = limit_left;
+  this->limit_pos = limit_right;
 
   if (limit_right == 0 && limit_left == 0)
   {
@@ -175,8 +182,15 @@ void RobotJoint::setPosLimits(float limit_right, float limit_left)
 
 float RobotJoint::convertPositionInput(int16_t rawPosition)
 {
-  return (float)(double(CONVERSION_FACTOR_13BITPOS_DEG) * double(rawPosition)) * angle_direction -
-         angle_offset;
+
+  float angle = (float)(double(CONVERSION_FACTOR_13BITPOS_DEG) * double(rawPosition)) * angle_direction -
+                angle_offset;
+
+  if (angle > 180 || angle < -180)
+  {
+    angle = (-1) * angle - 180.0;
+  }
+  return angle;
 }
 
 float RobotJoint::convertTorqueInput(int32_t rawTorque)
@@ -217,20 +231,20 @@ float RobotJoint::getAccelerationDeg()
 float RobotJoint::getTorque() { return torque.last(); }
 float RobotJoint::getCurrent() { return current.last(); }
 
-float RobotJoint::getLimitR() { return limit_right; };
-float RobotJoint::getLimitL() { return limit_left; }
+float RobotJoint::getLimitR() { return limit_pos; };
+float RobotJoint::getLimitL() { return limit_neg; }
 
 int RobotJoint::hitJointLimit()
 {
   float pos = position.last();
 
-  if (pos < limit_left)
+  if (pos < limit_neg)
   {
     //Serial.print("#Hit Joint Limit: ");
     //Serial.println(joint_id);
     return NEGATIVE_DIRECTION;
   }
-  else if (pos > limit_right)
+  else if (pos > limit_pos)
   {
     //Serial.print("#Hit Joint Limit: ");
     //Serial.println(joint_id);
@@ -267,4 +281,82 @@ float RobotJoint::getTorqueOffset()
 void RobotJoint::setAccelerationtarget(float acceleration_target)
 {
   current_feedforward = acceleration_target * acc2CurrentFactor;
+}
+
+int RobotJoint::restrictOutputSignal(int16_t u)
+{
+
+  float pos = position.last();
+  int maxOutput = u;
+
+  if (pos < limit_neg + limit_deadband + limit_slope_width)
+  {
+
+    if (u > 0)
+    {
+      return u;
+    }
+    if (pos < limit_neg + limit_deadband)
+    {
+      return 0;
+    }
+    else
+    {
+      maxOutput = -(int)4096 * float(1 / limit_slope_width) * (pos - limit_neg - limit_deadband);
+      if (maxOutput < u)
+      {
+        return u;
+      }
+      return maxOutput;
+    }
+  }
+  else if (pos > limit_pos - limit_deadband - limit_slope_width)
+  {
+    if (u < 0)
+    {
+      return u;
+    }
+    if (pos > limit_pos - limit_deadband - limit_slope_width)
+    {
+      return 0;
+    }
+    else
+    {
+      maxOutput = (int)4096 * float(-1 / limit_slope_width) * (pos - limit_pos + limit_deadband);
+      if (maxOutput > u)
+      {
+        return u;
+      }
+      return maxOutput;
+    }
+  }
+  return u;
+}
+
+void RobotJoint::checkSensorError()
+{
+
+  static int lastSensorErrorCheck = 0;
+
+  if (millis() - lastSensorErrorCheck < checkEncoderErrorSampleTime)
+  {
+
+    float posMean = 0;
+
+    float deviation = position[0] - position[1];
+
+    if (deviation < 0.00001)
+    {
+      this->sensorError = true;
+      sendRGBCommand(this->joint_id, 255, 0, 0);
+      sendSensorControllerCommand(this->joint_id, SENSORBOARD_RESET_CALL);
+
+      Serial.println("#sensor error");
+    }
+    else
+    {
+      this->sensorError = false;
+    }
+    lastSensorErrorCheck = millis();
+  }
 }

@@ -42,7 +42,7 @@ void processCanMsgs(const CAN_message_t &can_msg)
     case CAN_ID_ENCODERDATA:
         encoderDataPacket encoderData;
         deSerializeEncoderData(can_msg.buf, &encoderData);
-        jointPositionInput[encoderData.joint_id].push(encoderData.encoderValue);
+        jointPositionInput[encoderData.joint_id].unshift(encoderData.encoderValue);
 #ifdef CAN_DEBUG_ENCODER
         Serial.print("Joint ");
         Serial.print(encoderData.joint_id);
@@ -57,7 +57,7 @@ void processCanMsgs(const CAN_message_t &can_msg)
     case CAN_ID_TORQUESENSOR:
         torqueDataPacket torqueData;
         deSerializeTorqueData(can_msg.buf, &torqueData);
-        jointTorqueInput[torqueData.joint_id].push(torqueData.torqueValue);
+        jointTorqueInput[torqueData.joint_id].unshift(torqueData.torqueValue);
 #ifdef CAN_DEBUG_TORQUE
         Serial.print("Joint ");
         Serial.print(torqueData.joint_id);
@@ -67,7 +67,7 @@ void processCanMsgs(const CAN_message_t &can_msg)
 #endif
 
 #ifdef CAN_COUNTER
-            torqueCount++;
+        torqueCount++;
 #endif
         break;
     }
@@ -103,6 +103,42 @@ void sendRGBCommand(uint8_t joint_id, uint8_t r, uint8_t g, uint8_t b)
     msg.id = CAN_ID_LIGHT_COMMAND;
 
     bytes2CanMsg(bytes, LIGHTCOMMAND_PAKET_SIZE, msg);
+
+    sendCanMsg(msg);
+}
+
+void sendHSVCommand(uint8_t joint_id, uint8_t h, uint8_t s, uint8_t v)
+{
+    lightCommand command;
+    command.joint_id = joint_id;
+    command.mode = LIGHTCOMMAND_HSV;
+    command.value_0 = h;
+    command.value_1 = s;
+    command.value_2 = v;
+
+    uint8_t bytes[LIGHTCOMMAND_PAKET_SIZE];
+    serializeLightCommand(bytes, &command);
+
+    CAN_message_t msg;
+
+    msg.id = CAN_ID_LIGHT_COMMAND;
+
+    bytes2CanMsg(bytes, LIGHTCOMMAND_PAKET_SIZE, msg);
+
+    sendCanMsg(msg);
+}
+
+void sendSensorControllerCommand(u_int8_t joint_id, int mode)
+{
+    sensorControllerCommand command;
+    command.joint_id = joint_id;
+    command.mode = mode;
+
+    uint8_t bytes[SENSORCONTROLLER_COMMAND_SIZE];
+    serializeSensorControllerCommand(bytes, &command);
+    CAN_message_t msg;
+    msg.id = CAN_ID_SENSORCONTROLLER_COMMAND;
+    bytes2CanMsg(bytes, SENSORCONTROLLER_COMMAND_SIZE, msg);
 
     sendCanMsg(msg);
 }

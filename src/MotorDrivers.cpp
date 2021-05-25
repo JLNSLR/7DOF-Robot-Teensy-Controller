@@ -148,7 +148,7 @@ void initCurrentSensorADCPins()
 
   calibrateOffsetCurrentSensor();
 }
-int16_t readCurrentSensor(int sensorId)
+int32_t readCurrentSensor(int sensorId)
 {
 
   switch (sensorId)
@@ -163,7 +163,7 @@ int16_t readCurrentSensor(int sensorId)
     return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
     break;
   case 3:
-    return processCurrentSensor(I30A, currentSensorPins[sensorId], sensorId);
+    return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
     break;
   case 4:
     return processCurrentSensor(I5A, currentSensorPins[sensorId], sensorId);
@@ -177,7 +177,7 @@ int16_t readCurrentSensor(int sensorId)
   }
 }
 
-int16_t processCurrentSensor(currentSensorSpec spec, uint8_t pin, uint8_t sensorId)
+int32_t processCurrentSensor(currentSensorSpec spec, uint8_t pin, uint8_t sensorId)
 {
 #define CURRENT_OFFSET_VAL 2069
 
@@ -190,15 +190,15 @@ int16_t processCurrentSensor(currentSensorSpec spec, uint8_t pin, uint8_t sensor
 
   if (spec == I5A)
   {
-    current = current * SENSITIVITY_5A;
+    current = float(current * SENSITIVITY_5A);
   }
   else if (spec == I30A)
   {
-    current = current * SENSITIVITY_30A;
+    current = float(current * SENSITIVITY_30A);
   }
   else if (spec == I20A)
   {
-    current = current * SENSITIVITY_20A;
+    current = float(current * SENSITIVITY_20A);
   }
 
   return current;
@@ -211,16 +211,20 @@ void calibrateOffsetCurrentSensor()
 
   Serial.println("#Calibrating Current Sensors.");
 
+  int zerocurrent_val[7] = {0};
+  for (int j = 0; j < n_readings; j++)
+  {
+    for (int i = 0; i < 7; i++)
+    {
+      zerocurrent_val[i] = zerocurrent_val[i] + analogRead(currentSensorPins[i]);
+    }
+    delay(1);
+  }
+
   for (int i = 0; i < 7; i++)
   {
-    int zerocurrent_val = 0;
-    for (int j = 0; j < n_readings; j++)
-    {
-      zerocurrent_val = zerocurrent_val + analogRead(currentSensorPins[i]);
-      delay(delay_between_readings);
-    }
-    zerocurrent_val = zerocurrent_val / n_readings;
-    currentSensorOffsets[i] = zerocurrent_val;
+    zerocurrent_val[i] = zerocurrent_val[i] / n_readings;
+    currentSensorOffsets[i] = zerocurrent_val[i];
   }
 
   Serial.println("#Successfully calibrated Current Sensors");

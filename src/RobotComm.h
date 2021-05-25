@@ -68,7 +68,7 @@ public:
 
   Manipulator *robot;
 
-  int serialOutputPeriod = 20000;
+  int serialOutputPeriod = 3333;
   int serialInputPeriod = 3333;
 
   void periodicSerialOutput();

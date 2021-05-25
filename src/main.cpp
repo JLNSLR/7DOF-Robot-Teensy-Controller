@@ -32,7 +32,7 @@ void setup()
   Serial.setTimeout(1);
   canInit();
   initializeMotorControlPins();
-  delay(1000);
+  delay(10);
   initCurrentSensorADCPins();
   sei();
 
@@ -59,6 +59,10 @@ void setup()
 
   joint_test.initRobotJoint();
   */
+
+  robot.robotJoints[6].positionPID.kp = 1000;
+  robot.robotJoints[6].positionPID.ki = 0;
+  robot.robotJoints[6].positionPID.kd = 0;
 }
 
 void loop()
@@ -69,26 +73,10 @@ void loop()
   communication.periodicSerialOutput();
   communication.readInputCommands();
 
-  //joint_test.processPositionInput();
-  //joint_test.processCurrentInput();
-  //Serial.println(readCurrentSensor(1));
-  //Serial.println(robot.robotJoints[2].getCurrent());
-  //Serial.println(jointPositionInput[1].last());
-
-  if (millis() - lastdirection_1 > 20)
-  {
-    lastdirection_1 = millis();
-    n++;
-
-    //controlMotorDriver(1, 2000 * sin(6.28 * 1 / 10 * 0.02 * n));
-    //robot.robotJoints[2].drive(2500 * sin(6.28 * 2 / 1* 0.02 * n));
-    //controlMotorDriver(1,2000 * sin(6.28 * 1 / 5 * 0.02 * n));
-
-    //Serial.println(1900 * sin(6.28 * 1 / 1 * 0.02 * n));
-    if (n > 500)
-    {
-      n = 0;
-    }
-  }
   delayMicroseconds(100);
+
+
+  //robot.robotJoints[6].processPositionController();
+
+  robot.generateSingleJointRectanglePosSignal(6,0,60,3000);
 }

@@ -3,7 +3,7 @@
 #include <Arduino.h>
 #include <ControlBoard_PinDefines.h>
 
-const int pwm_frequency = 18000;
+const int pwm_frequency = 20000;
 const int pwm_resolution = 12;
 
 const int pwm_pins[23] = {PWM_FAN_1, PWM_FAN_2, PWM_FAN_3, PWM_FAN_4, PWM_FAN_5, PWM_FAN_6,
@@ -37,8 +37,8 @@ void initCurrentSensorADCPins();
 
 void calibrateOffsetCurrentSensor();
 
-int16_t readCurrentSensor(int sensorId);
+int32_t readCurrentSensor(int sensorId);
 
-int16_t processCurrentSensor(currentSensorSpec spec, uint8_t pin, uint8_t sensorId);
+int32_t processCurrentSensor(currentSensorSpec spec, uint8_t pin, uint8_t sensorId);
 
 #endif //MOTORDRIVERS_H

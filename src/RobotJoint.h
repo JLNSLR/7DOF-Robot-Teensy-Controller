@@ -9,6 +9,7 @@
 #include <Math/differentiator.h>
 #include <Arduino.h>
 #include <EEPROM.h>
+#include <RobotCANHandler.h>
 
 #define CURRENT_FILTER_ORDER 4
 #define POSITION_FILTER_ORDER 6
@@ -31,7 +32,6 @@ class RobotJoint
 {
 public:
   RobotJoint();
-
   RobotJoint(const RobotJoint &) = delete;
 
   uint8_t joint_id;
@@ -43,20 +43,24 @@ public:
   bool currentLimit = false;
   bool torqueLimit = false;
 
+  bool sensorError = false;
+
   float maxSpeed;        // in deg/s
   float maxAcceleration; // in deg/s^2
   float maxTorque;
   float maxCurrent;
 
-  CircularBuffer<float, 5> position;
-  CircularBuffer<float, 5> velocity;
-  CircularBuffer<float, 5> acceleration;
-  CircularBuffer<float, 5> torque;
-  CircularBuffer<float, 5> current;
+  CircularBuffer<float, 10> position;
+  CircularBuffer<float, 10> velocity;
+  CircularBuffer<float, 10> acceleration;
+  CircularBuffer<float, 10> torque;
+  CircularBuffer<float, 10> current;
 
   PIDController positionPID;
   PIDController velocityPID;
   PIDController currentPID;
+
+  bool baseLineController = true;
 
   int16_t motorCommand = 0;
   float position_target = 0;
@@ -70,7 +74,13 @@ public:
   void processVelocityController();
   void processPositionController();
 
+  void processCascadeController();
+
+
   float torque_target;
+
+  float limit_deadband = 0;
+  float limit_slope_width = 15;
 
   static float a_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1];
   static float b_coefficients_currentFilter[CURRENT_FILTER_ORDER + 1];
@@ -80,6 +90,8 @@ public:
 
   static float a_coefficients_torqueFilter[TORQUE_FILTER_ORDER + 1];
   static float b_coefficients_torqueFilter[TORQUE_FILTER_ORDER + 1];
+
+  static const int checkEncoderErrorSampleTime = 50;
 
   IIRFilter<CURRENT_FILTER_ORDER> currentFilter;
   IIRFilter<POSITION_FILTER_ORDER> positionFilter;
@@ -125,6 +137,8 @@ public:
 
   float acc2CurrentFactor = 100;
 
+  void checkSensorError();
+
 private:
   int lastTimePositionInput = 0;
   int lastTimeTorqueInput = 0;
@@ -147,8 +161,8 @@ private:
   float angle_offset = 0;
   float torque_offset = 0;
 
-  float limit_left = 0;
-  float limit_right = 0;
+  float limit_neg = 0;
+  float limit_pos = 0;
 
   float convertPositionInput(int16_t rawPosition);
   float convertTorqueInput(int32_t rawTorque);
@@ -162,6 +176,7 @@ private:
   CircularBuffer<float, CURRENT_MOV_AVERAGE> currentAverage;
 
   int hitJointLimit();
+  int restrictOutputSignal(int16_t u);
 };
 
 #endif // ROBOTJOINT_H

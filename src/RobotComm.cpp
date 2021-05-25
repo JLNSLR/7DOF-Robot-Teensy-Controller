@@ -222,7 +222,7 @@ void RobotComm::periodicSerialOutput()
   if (micros() - last_output > serialOutputPeriod)
     last_output = micros();
   {
-
+    Serial.print("d:");
     switch (mode)
     {
     case position:

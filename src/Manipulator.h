@@ -56,6 +56,10 @@ public:
   void saveGainData();
   void saveLimitData();
 
+  void generateSingleJointRectanglePosSignal(uint8_t joint_id,float startValue,float endValue, int period);
+
+  void generateSingleJointSinusPosSignal(uint8_t joint_id,float startValue,float endValue, int period);
+
 private:
   const int offset_addresses = 0;
   const int limitAdresses = offset_addresses + sizeof(RobotOffsets);

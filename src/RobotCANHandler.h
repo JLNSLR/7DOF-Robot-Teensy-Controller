@@ -33,4 +33,6 @@ void bytes2CanMsg(const uint8_t *bytes, const int len, CAN_message_t &msg);
 
 void sendRGBCommand(uint8_t joint_id, uint8_t r, uint8_t g, uint8_t b);
 
+void sendSensorControllerCommand(u_int8_t joint_id, int mode);
+
 #endif //ROBOTCANHANDLER_H
